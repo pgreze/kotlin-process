@@ -4,8 +4,8 @@ plugins {
     kotlin("jvm") version "1.4.30"
     id("org.jetbrains.dokka") version "0.10.1"
     jacoco
-    id("org.jlleitschuh.gradle.ktlint") version "9.2.1"
-    id("io.gitlab.arturbosch.detekt") version "1.7.4"
+    id("org.jlleitschuh.gradle.ktlint") version "10.0.0"
+    id("io.gitlab.arturbosch.detekt") version "1.15.0"
     `maven-publish`
     signing
     id("io.codearte.nexus-staging") version "0.22.0"
