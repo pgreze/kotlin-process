@@ -1,11 +1,12 @@
 package com.github.pgreze.process
 
 import com.github.pgreze.process.RedirectMode.CAPTURE
+import com.github.pgreze.process.RedirectMode.Consume
 import com.github.pgreze.process.RedirectMode.File
 import com.github.pgreze.process.RedirectMode.PRINT
 import com.github.pgreze.process.RedirectMode.SILENT
-import com.github.pgreze.process.RedirectMode.Streaming
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.toList
 import org.amshove.kluent.shouldBeEqualTo
 import org.amshove.kluent.shouldContain
 import org.junit.jupiter.api.DisplayName
@@ -22,7 +23,6 @@ import java.nio.file.Path
 
 @ExperimentalCoroutinesApi
 class ProcessKtTest {
-
     companion object {
         val OUT = arrayOf("hello world", "no worry")
         val ERR = arrayOf("e=omg", "e=windows")
@@ -88,11 +88,11 @@ class ProcessKtTest {
     }
 
     @Test
-    fun `use Streaming when CAPTURE is unnecessary`() = runTestBlocking {
+    fun `use Consume when CAPTURE is unnecessary`() = runTestBlocking {
         val consumer = mutableListOf<String>()
         val output = process(
             *CMD,
-            stdout = Streaming(consumer::add),
+            stdout = Consume { it.toList(consumer) },
             stderr = CAPTURE,
         ).validate()
 

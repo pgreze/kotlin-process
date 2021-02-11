@@ -4,9 +4,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import java.io.InputStream
 
@@ -35,7 +33,7 @@ sealed class RedirectMode {
      * This is correctly using [System.out] or [System.err] depending on the stream +
      * preserving the correct order.
      * @see ProcessBuilder.Redirect.INHERIT
-     * @see Streaming when you want to have full control on the outcome.
+     * @see Consume when you want to have full control on the outcome.
      */
     object PRINT : RedirectMode()
 
@@ -52,11 +50,11 @@ sealed class RedirectMode {
     class File(val file: java.io.File, val append: Boolean = false) : RedirectMode()
 
     /**
-     * Alternative to [CAPTURE] allowing to consume their content
-     * without storing them in memory, and so not returned at the end of [process] invocation.
+     * Alternative to [CAPTURE] allowing to consume without delay a stream
+     * without storing it in memory, and so not returned at the end of [process] invocation.
      * @see [process]'s consumer argument to consume [CAPTURE] content without delay.
      */
-    class Streaming(val consumer: (String) -> Unit) : RedirectMode()
+    class Consume(val consumer: suspend (Flow<String>) -> Unit) : RedirectMode()
 }
 
 @ExperimentalCoroutinesApi
@@ -69,6 +67,7 @@ suspend fun process(
     /** Allowing to append new environment variables during this process's invocation. */
     env: Map<String, String>? = null,
     /** Consume without delay all streams configured with [RedirectMode.CAPTURE] */
+    // If we want this function to be suspend, we'll need to manage a sharedFlow.
     consumer: (String) -> Unit = {},
 ): ProcessResult = withContext(Dispatchers.IO) {
     // Based on the fact that it's hardcore to achieve manually:
@@ -85,12 +84,12 @@ suspend fun process(
         env?.let { environment().putAll(it) }
     }.start()
 
-    // Handles async streaming consumption before the blocking output handling.
-    if (stdout is RedirectMode.Streaming) {
-        process.inputStream.toLinesFlow().collect { stdout.consumer(it) }
+    // Handles async consumptions before the blocking output handling.
+    if (stdout is RedirectMode.Consume) {
+        process.inputStream.toLinesFlow().let { stdout.consumer(it) }
     }
-    if (stderr is RedirectMode.Streaming) {
-        process.errorStream.toLinesFlow().collect { stderr.consumer(it) }
+    if (stderr is RedirectMode.Consume) {
+        process.errorStream.toLinesFlow().let { stderr.consumer(it) }
     }
 
     // Consume the output before waitFor, ensuring no content is skipped.
@@ -100,7 +99,8 @@ suspend fun process(
         stderr == RedirectMode.CAPTURE ->
             process.errorStream
         else -> null
-    }?.toLinesFlow()?.map { it.also(consumer) }?.toList() ?: emptyList()
+    }?.bufferedReader()?.lineSequence()?.map { it.also(consumer) }?.toList()
+        ?: emptyList()
 
     return@withContext ProcessResult(
         resultCode = process.waitFor(),
@@ -109,7 +109,7 @@ suspend fun process(
 }
 
 private fun InputStream.toLinesFlow(): Flow<String> =
-    bufferedReader().lineSequence().asFlow()
+    bufferedReader().lineSequence().asFlow().flowOn(Dispatchers.IO)
 
 private fun RedirectMode.toNative() = when (this) {
     RedirectMode.SILENT -> ProcessBuilder.Redirect.DISCARD
@@ -119,5 +119,5 @@ private fun RedirectMode.toNative() = when (this) {
         true -> ProcessBuilder.Redirect.appendTo(file)
         false -> ProcessBuilder.Redirect.to(file)
     }
-    is RedirectMode.Streaming -> ProcessBuilder.Redirect.PIPE
+    is RedirectMode.Consume -> ProcessBuilder.Redirect.PIPE
 }
