@@ -25,10 +25,37 @@ fun ProcessResult.validate(): List<String> {
 }
 
 sealed class RedirectMode {
+    /** Ignores the related stream. */
     object SILENT : RedirectMode()
+
+    /**
+     * Redirect the stream to this process equivalent one.
+     * In other words, it will print to the terminal if this process is also doing so.
+     *
+     * This is correctly using [System.out] or [System.err] depending on the stream +
+     * preserving the correct order.
+     * @see ProcessBuilder.Redirect.INHERIT
+     * @see Streaming when you want to have full control on the outcome.
+     */
     object PRINT : RedirectMode()
+
+    /**
+     * This will ensure that the stream content is returned as [process]'s return.
+     * If both stdout and stderr are using this mode, their output will be correctly merged.
+     *
+     * It's also possible to consume this content without delay by using [process]'s consumer argument.
+     * @see [ProcessBuilder.redirectErrorStream]
+     */
     object CAPTURE : RedirectMode()
+
+    /** Redirect to a file, overriding or appending on demand. */
     class File(val file: java.io.File, val append: Boolean = false) : RedirectMode()
+
+    /**
+     * Alternative to [CAPTURE] allowing to consume their content
+     * without storing them in memory, and so not returned at the end of [process] invocation.
+     * @see [process]'s consumer argument to consume [CAPTURE] content without delay.
+     */
     class Streaming(val consumer: (String) -> Unit) : RedirectMode()
 }
 
@@ -36,10 +63,12 @@ sealed class RedirectMode {
 @Suppress("BlockingMethodInNonBlockingContext")
 suspend fun process(
     vararg command: String,
+    // TODO: stdin from string or file
     stdout: RedirectMode = RedirectMode.PRINT,
     stderr: RedirectMode = RedirectMode.PRINT,
+    /** Allowing to append new environment variables during this process's invocation. */
     env: Map<String, String>? = null,
-    /** Invoked for [stdout] or [stderr] output when their mode is [RedirectMode.CAPTURE] */
+    /** Consume without delay all streams configured with [RedirectMode.CAPTURE] */
     consumer: (String) -> Unit = {},
 ): ProcessResult = withContext(Dispatchers.IO) {
     // Based on the fact that it's hardcore to achieve manually:
@@ -56,7 +85,7 @@ suspend fun process(
         env?.let { environment().putAll(it) }
     }.start()
 
-    // Handles async streaming consumption before the blocking output handling
+    // Handles async streaming consumption before the blocking output handling.
     if (stdout is RedirectMode.Streaming) {
         process.inputStream.toLinesFlow().collect { stdout.consumer(it) }
     }
