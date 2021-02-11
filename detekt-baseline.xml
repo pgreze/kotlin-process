@@ -1,0 +1,7 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <Blacklist></Blacklist>
+  <Whitelist>
+    <ID>SpreadOperator:MultiWithDefault.kt$(*entries)</ID>
+  </Whitelist>
+</SmellBaseline>

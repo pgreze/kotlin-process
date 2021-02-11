@@ -1,0 +1,43 @@
+# https://help.github.com/en/actions/language-and-framework-guides/building-and-testing-java-with-gradle
+# https://help.github.com/en/actions/language-and-framework-guides/publishing-java-packages-with-gradle
+
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - '*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # setup
+      - uses: actions/checkout@v2
+      - name: Set up JDK 11
+        uses: actions/setup-java@v1
+        with:
+          java-version: 11
+      # Cache
+      - name: Cache Gradle wrapper
+        uses: actions/cache@v1
+        with:
+          path: ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/*') }}
+          restore-keys: ${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/*') }}
+      - name: Cache Gradle packages
+        uses: actions/cache@v1
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle.kts') }}
+          restore-keys: ${{ runner.os }}-gradle
+      # Build
+      - name: Build
+        run: ./gradlew build --continue
+      - name: Codecov
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        run: bash <(curl -s https://codecov.io/bash)
