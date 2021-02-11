@@ -24,7 +24,7 @@ java {
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-    kotlinOptions.jvmTarget = "1.8"
+    kotlinOptions.jvmTarget = "11"
 }
 
 configure<io.gitlab.arturbosch.detekt.extensions.DetektExtension> {
@@ -32,9 +32,7 @@ configure<io.gitlab.arturbosch.detekt.extensions.DetektExtension> {
 }
 
 tasks.test {
-    useJUnitPlatform {
-        includeEngines("spek2")
-    }
+    useJUnitPlatform()
     finalizedBy(tasks.jacocoTestReport)
 }
 tasks.jacocoTestReport {
@@ -80,15 +78,18 @@ tasks.dokka {
 
 repositories {
     jcenter()
+    mavenCentral()
 }
 
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.4.2")
 
     testImplementation("org.amshove.kluent:kluent:1.61")
-    val junit5 = "5.3.1"
+    val junit5 = "5.7.1"
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junit5")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junit5")
+    testImplementation("org.junit.jupiter:junit-jupiter-params:$junit5")
 }
 
 //
