@@ -4,6 +4,7 @@ import com.github.pgreze.process.RedirectMode.CAPTURE
 import com.github.pgreze.process.RedirectMode.File
 import com.github.pgreze.process.RedirectMode.PRINT
 import com.github.pgreze.process.RedirectMode.SILENT
+import com.github.pgreze.process.RedirectMode.Streaming
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.amshove.kluent.shouldBeEqualTo
 import org.amshove.kluent.shouldContain
@@ -84,6 +85,19 @@ class ProcessKtTest {
             res.output shouldBeEqualTo ALL.toList()
             consumer.toString() shouldBeEqualTo res.output.joinLines()
         }
+    }
+
+    @Test
+    fun `use Streaming when CAPTURE is unnecessary`() = runTestBlocking {
+        val consumer = mutableListOf<String>()
+        val output = process(
+            *CMD,
+            stdout = Streaming(consumer::add),
+            stderr = CAPTURE,
+        ).validate()
+
+        output shouldBeEqualTo ERR.toList()
+        consumer shouldBeEqualTo OUT.toList()
     }
 
     @Nested

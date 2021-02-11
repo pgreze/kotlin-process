@@ -4,6 +4,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.withContext
+import java.io.InputStream
 
 data class ProcessResult(
     val resultCode: Int,
@@ -24,7 +25,7 @@ sealed class RedirectMode {
     object PRINT : RedirectMode()
     object CAPTURE : RedirectMode()
     class File(val file: java.io.File, val append: Boolean = false) : RedirectMode()
-    // TODO: Stream mode, allowing to consume without storing the content
+    class Streaming(val consumer: (String) -> Unit) : RedirectMode()
 }
 
 @ExperimentalCoroutinesApi
@@ -51,6 +52,14 @@ suspend fun process(
         env?.let { environment().putAll(it) }
     }.start()
 
+    // Handles async streaming consumption before the blocking output handling
+    if (stdout is RedirectMode.Streaming) {
+        process.inputStream.toLinesFlow().collect { stdout.consumer(it) }
+    }
+    if (stderr is RedirectMode.Streaming) {
+        process.errorStream.toLinesFlow().collect { stderr.consumer(it) }
+    }
+
     // Consume the output before waitFor, ensuring no content is skipped.
     val output = when {
         captureAll || stdout == RedirectMode.CAPTURE ->
@@ -58,15 +67,16 @@ suspend fun process(
         stderr == RedirectMode.CAPTURE ->
             process.errorStream
         else -> null
-    }?.bufferedReader()?.useLines { lines ->
-        lines.map { it.also(consumer) }.toList()
-    } ?: emptyList()
+    }?.toLinesFlow()?.map { it.also(consumer) }?.toList() ?: emptyList()
 
     return@withContext ProcessResult(
         resultCode = process.waitFor(),
         output = output,
     )
 }
+
+private fun InputStream.toLinesFlow(): Flow<String> =
+    bufferedReader().lineSequence().asFlow()
 
 private fun RedirectMode.toNative() = when (this) {
     RedirectMode.SILENT -> ProcessBuilder.Redirect.DISCARD
@@ -76,4 +86,5 @@ private fun RedirectMode.toNative() = when (this) {
         true -> ProcessBuilder.Redirect.appendTo(file)
         false -> ProcessBuilder.Redirect.to(file)
     }
+    is RedirectMode.Streaming -> ProcessBuilder.Redirect.PIPE
 }
