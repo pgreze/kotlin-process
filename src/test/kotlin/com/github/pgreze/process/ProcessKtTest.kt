@@ -2,7 +2,7 @@ package com.github.pgreze.process
 
 import com.github.pgreze.process.Redirect.CAPTURE
 import com.github.pgreze.process.Redirect.Consume
-import com.github.pgreze.process.Redirect.File
+import com.github.pgreze.process.Redirect.ToFile
 import com.github.pgreze.process.Redirect.PRINT
 import com.github.pgreze.process.Redirect.SILENT
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -60,8 +60,8 @@ class ProcessKtTest {
         val err = dir.resolve("err.txt").toFile().also { it.writeText("$errHeader\n") }
         process(
             *CMD,
-            stdout = File(out, append = false),
-            stderr = File(err, append = true),
+            stdout = ToFile(out, append = false),
+            stderr = ToFile(err, append = true),
         ).validate()
 
         out.readText() shouldBeEqualTo OUT.toList().joinLines()

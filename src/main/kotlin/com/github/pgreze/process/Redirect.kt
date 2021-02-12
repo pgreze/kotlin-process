@@ -1,6 +1,7 @@
 package com.github.pgreze.process
 
 import kotlinx.coroutines.flow.Flow
+import java.io.File
 
 sealed class Redirect {
     /** Ignores the related stream. */
@@ -26,8 +27,8 @@ sealed class Redirect {
      */
     object CAPTURE : Redirect()
 
-    /** Redirect to a file, overriding or appending on demand. */
-    class File(val file: java.io.File, val append: Boolean = false) : Redirect()
+    /** Override or append to a file. */
+    class ToFile(val file: File, val append: Boolean = false) : Redirect()
 
     /**
      * Alternative to [CAPTURE] allowing to consume without delay a stream
@@ -41,7 +42,7 @@ internal fun Redirect.toNative() = when (this) {
     Redirect.SILENT -> ProcessBuilder.Redirect.DISCARD
     Redirect.PRINT -> ProcessBuilder.Redirect.INHERIT
     Redirect.CAPTURE -> ProcessBuilder.Redirect.PIPE
-    is Redirect.File -> when (append) {
+    is Redirect.ToFile -> when (append) {
         true -> ProcessBuilder.Redirect.appendTo(file)
         false -> ProcessBuilder.Redirect.to(file)
     }
