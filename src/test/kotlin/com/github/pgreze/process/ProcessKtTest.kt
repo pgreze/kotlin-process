@@ -2,9 +2,9 @@ package com.github.pgreze.process
 
 import com.github.pgreze.process.Redirect.CAPTURE
 import com.github.pgreze.process.Redirect.Consume
-import com.github.pgreze.process.Redirect.ToFile
 import com.github.pgreze.process.Redirect.PRINT
 import com.github.pgreze.process.Redirect.SILENT
+import com.github.pgreze.process.Redirect.ToFile
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.toList
 import org.amshove.kluent.shouldBeEqualTo
@@ -49,7 +49,7 @@ class ProcessKtTest {
     fun `env is allowing to inject environment variables`() = runTestBlocking {
         val name = "PROCESS_VAR"
         val value = "42"
-        val output = process("env", env = mapOf(name to value), stdout = CAPTURE).validate()
+        val output = process("env", env = mapOf(name to value), stdout = CAPTURE).unwrap()
         output shouldContain "$name=$value"
     }
 
@@ -62,7 +62,7 @@ class ProcessKtTest {
             *CMD,
             stdout = ToFile(out, append = false),
             stderr = ToFile(err, append = true),
-        ).validate()
+        ).unwrap()
 
         out.readText() shouldBeEqualTo OUT.toList().joinLines()
         err.readText() shouldBeEqualTo arrayOf(errHeader, *ERR).toList().joinLines()
@@ -94,23 +94,24 @@ class ProcessKtTest {
             *CMD,
             stdout = Consume { it.toList(consumer) },
             stderr = CAPTURE,
-        ).validate()
+        ).unwrap()
 
         output shouldBeEqualTo ERR.toList()
         consumer shouldBeEqualTo OUT.toList()
     }
 
     @Nested
-    inner class Validate {
+    inner class Unwrap {
         @Test
         fun `a valid result throws nothing`() {
-            ProcessResult(resultCode = 0, output = emptyList()).validate() shouldBeEqualTo emptyList()
+            ProcessResult(resultCode = 0, output = emptyList())
+                .unwrap() shouldBeEqualTo emptyList()
         }
 
         @Test
         fun `an invalid result throws an IllegalStateException`() {
             val exception = assertThrows<IllegalStateException> {
-                ProcessResult(resultCode = 1, output = emptyList()).validate()
+                ProcessResult(resultCode = 1, output = emptyList()).unwrap()
             }
             exception.message!! shouldBeEqualTo "Invalid result: 1"
         }

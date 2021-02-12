@@ -37,3 +37,8 @@ sealed class InputSource {
         }
     }
 }
+
+internal fun InputSource.toNative() = when (this) {
+    is InputSource.FromFile -> ProcessBuilder.Redirect.from(file)
+    is InputSource.FromStream -> ProcessBuilder.Redirect.PIPE
+}

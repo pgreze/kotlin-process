@@ -12,22 +12,8 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.InputStream
 
-data class ProcessResult(
-    val resultCode: Int,
-    val output: List<String>,
-)
-
-/**
- * Helper allowing to ensure a [process] call always conclude correctly.
- * @return [ProcessResult.output] because it ensures the result is always 0.
- */
-fun ProcessResult.validate(): List<String> {
-    check(resultCode == 0) { "Invalid result: $resultCode" }
-    return output
-}
-
 @ExperimentalCoroutinesApi
-@Suppress("BlockingMethodInNonBlockingContext")
+@Suppress("BlockingMethodInNonBlockingContext", "LongParameterList", "ComplexMethod")
 suspend fun process(
     vararg command: String,
     stdin: InputSource? = null,
@@ -46,11 +32,7 @@ suspend fun process(
 
     // https://www.baeldung.com/java-lang-processbuilder-api
     val process = ProcessBuilder(*command).apply {
-        when (stdin) {
-            null -> null
-            is InputSource.FromFile -> ProcessBuilder.Redirect.from(stdin.file)
-            is InputSource.FromStream -> ProcessBuilder.Redirect.PIPE
-        }?.let { redirectInput(it) }
+        stdin?.toNative()?.let { redirectInput(it) }
 
         if (captureAll) {
             redirectErrorStream(true)

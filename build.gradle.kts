@@ -26,7 +26,9 @@ java {
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
     kotlinOptions.jvmTarget = "11"
 }
-
+configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
+    disabledRules.set(setOf("import-ordering"))
+}
 configure<io.gitlab.arturbosch.detekt.extensions.DetektExtension> {
     baseline = file("detekt-baseline.xml")
 }

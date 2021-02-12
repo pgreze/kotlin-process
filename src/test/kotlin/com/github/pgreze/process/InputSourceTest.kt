@@ -1,19 +1,17 @@
 package com.github.pgreze.process
 
+import java.io.ByteArrayInputStream
+import java.util.Collections
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import org.amshove.kluent.shouldBeEqualTo
-import org.junit.jupiter.api.Test
-
-import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.RepeatedTest
-import java.io.ByteArrayInputStream
-import java.util.*
+import org.junit.jupiter.api.Test
 
 @ExperimentalCoroutinesApi
 class InputSourceTest {
@@ -27,7 +25,7 @@ class InputSourceTest {
             "cat",
             stdin = InputSource.fromString(string),
             stdout = Redirect.CAPTURE
-        ).validate()
+        ).unwrap()
         output shouldBeEqualTo listOf(string)
     }
 
@@ -38,7 +36,7 @@ class InputSourceTest {
             "cat",
             stdin = InputSource.fromInputStream(inputStream),
             stdout = Redirect.CAPTURE
-        ).validate()
+        ).unwrap()
         output shouldBeEqualTo listOf(string)
     }
 
@@ -73,7 +71,7 @@ class InputSourceTest {
                     channel.send(Unit)
                 }
 
-            proc.await().validate()
+            proc.await().unwrap()
         }
     }
 }
