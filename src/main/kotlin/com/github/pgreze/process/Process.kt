@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
+import java.io.File
 import java.io.InputStream
 
 data class ProcessResult(
@@ -22,81 +23,50 @@ fun ProcessResult.validate(): List<String> {
     return output
 }
 
-sealed class RedirectMode {
-    /** Ignores the related stream. */
-    object SILENT : RedirectMode()
-
-    /**
-     * Redirect the stream to this process equivalent one.
-     * In other words, it will print to the terminal if this process is also doing so.
-     *
-     * This is correctly using [System.out] or [System.err] depending on the stream +
-     * preserving the correct order.
-     * @see ProcessBuilder.Redirect.INHERIT
-     * @see Consume when you want to have full control on the outcome.
-     */
-    object PRINT : RedirectMode()
-
-    /**
-     * This will ensure that the stream content is returned as [process]'s return.
-     * If both stdout and stderr are using this mode, their output will be correctly merged.
-     *
-     * It's also possible to consume this content without delay by using [process]'s consumer argument.
-     * @see [ProcessBuilder.redirectErrorStream]
-     */
-    object CAPTURE : RedirectMode()
-
-    /** Redirect to a file, overriding or appending on demand. */
-    class File(val file: java.io.File, val append: Boolean = false) : RedirectMode()
-
-    /**
-     * Alternative to [CAPTURE] allowing to consume without delay a stream
-     * without storing it in memory, and so not returned at the end of [process] invocation.
-     * @see [process]'s consumer argument to consume [CAPTURE] content without delay.
-     */
-    class Consume(val consumer: suspend (Flow<String>) -> Unit) : RedirectMode()
-}
-
 @ExperimentalCoroutinesApi
 @Suppress("BlockingMethodInNonBlockingContext")
 suspend fun process(
     vararg command: String,
     // TODO: stdin from string or file
-    stdout: RedirectMode = RedirectMode.PRINT,
-    stderr: RedirectMode = RedirectMode.PRINT,
+    stdout: Redirect = Redirect.PRINT,
+    stderr: Redirect = Redirect.PRINT,
     /** Allowing to append new environment variables during this process's invocation. */
     env: Map<String, String>? = null,
-    /** Consume without delay all streams configured with [RedirectMode.CAPTURE] */
+    /** Override the process working directory. */
+    directory: File? = null,
+    /** Consume without delay all streams configured with [Redirect.CAPTURE] */
     // If we want this function to be suspend, we'll need to manage a sharedFlow.
     consumer: (String) -> Unit = {},
 ): ProcessResult = withContext(Dispatchers.IO) {
     // Based on the fact that it's hardcore to achieve manually:
     // https://stackoverflow.com/a/4959696
-    val captureAll = stdout == stderr && stderr == RedirectMode.CAPTURE
+    val captureAll = stdout == stderr && stderr == Redirect.CAPTURE
     // https://www.baeldung.com/java-lang-processbuilder-api
     val process = ProcessBuilder(*command).apply {
+        redirectInput(ProcessBuilder.Redirect.from(TODO()))
         if (captureAll) {
             redirectErrorStream(true)
         } else {
             redirectOutput(stdout.toNative())
             redirectError(stderr.toNative())
         }
+        directory?.let { directory(it) }
         env?.let { environment().putAll(it) }
     }.start()
 
     // Handles async consumptions before the blocking output handling.
-    if (stdout is RedirectMode.Consume) {
+    if (stdout is Redirect.Consume) {
         process.inputStream.toLinesFlow().let { stdout.consumer(it) }
     }
-    if (stderr is RedirectMode.Consume) {
+    if (stderr is Redirect.Consume) {
         process.errorStream.toLinesFlow().let { stderr.consumer(it) }
     }
 
     // Consume the output before waitFor, ensuring no content is skipped.
     val output = when {
-        captureAll || stdout == RedirectMode.CAPTURE ->
+        captureAll || stdout == Redirect.CAPTURE ->
             process.inputStream
-        stderr == RedirectMode.CAPTURE ->
+        stderr == Redirect.CAPTURE ->
             process.errorStream
         else -> null
     }?.bufferedReader()?.lineSequence()?.map { it.also(consumer) }?.toList()
@@ -110,14 +80,3 @@ suspend fun process(
 
 private fun InputStream.toLinesFlow(): Flow<String> =
     bufferedReader().lineSequence().asFlow().flowOn(Dispatchers.IO)
-
-private fun RedirectMode.toNative() = when (this) {
-    RedirectMode.SILENT -> ProcessBuilder.Redirect.DISCARD
-    RedirectMode.PRINT -> ProcessBuilder.Redirect.INHERIT
-    RedirectMode.CAPTURE -> ProcessBuilder.Redirect.PIPE
-    is RedirectMode.File -> when (append) {
-        true -> ProcessBuilder.Redirect.appendTo(file)
-        false -> ProcessBuilder.Redirect.to(file)
-    }
-    is RedirectMode.Consume -> ProcessBuilder.Redirect.PIPE
-}

@@ -1,10 +1,10 @@
 package com.github.pgreze.process
 
-import com.github.pgreze.process.RedirectMode.CAPTURE
-import com.github.pgreze.process.RedirectMode.Consume
-import com.github.pgreze.process.RedirectMode.File
-import com.github.pgreze.process.RedirectMode.PRINT
-import com.github.pgreze.process.RedirectMode.SILENT
+import com.github.pgreze.process.Redirect.CAPTURE
+import com.github.pgreze.process.Redirect.Consume
+import com.github.pgreze.process.Redirect.File
+import com.github.pgreze.process.Redirect.PRINT
+import com.github.pgreze.process.Redirect.SILENT
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.toList
 import org.amshove.kluent.shouldBeEqualTo
