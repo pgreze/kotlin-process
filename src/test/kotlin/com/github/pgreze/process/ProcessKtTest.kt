@@ -18,6 +18,7 @@ import org.junit.jupiter.api.io.TempDir
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.io.PrintStream
 import java.nio.file.Path
 import kotlin.io.path.ExperimentalPathApi
@@ -79,6 +80,18 @@ class ProcessKtTest {
     }
 
     @Test
+    fun `directory is allowing to change folder`() = runSuspendTest {
+        // Notice: use a temporary path in OSX is failing due to /tmp -> /private/var symlink...
+        val dir = File(".").absoluteFile.parentFile
+        val output = process(
+            "pwd", "-L",
+            directory = dir,
+            stdout = CAPTURE
+        ).unwrap()
+        output shouldBeEqualTo listOf(dir.path)
+    }
+
+    @Test
     fun `process redirect to files`(@TempDir dir: Path) = runSuspendTest {
         val script = dir.createScript()
         val errHeader = "bonjour"
@@ -117,15 +130,33 @@ class ProcessKtTest {
     @Test
     fun `use Consume when CAPTURE is unnecessary`(@TempDir dir: Path) = runSuspendTest {
         val script = dir.createScript()
-        val consumer = mutableListOf<String>()
+        val stdout = mutableListOf<String>()
+        val stderr = mutableListOf<String>()
+
         val output = process(
             script.absolutePathString(), *ALL,
-            stdout = Consume { it.toList(consumer) },
+            stdout = Consume { it.toList(stdout) },
+            stderr = Consume { it.toList(stderr) },
+        ).unwrap()
+
+        output shouldBeEqualTo emptyList()
+        stdout shouldBeEqualTo OUT.toList()
+        stderr shouldBeEqualTo ERR.toList()
+    }
+
+    @Test
+    fun `ensure Consume and CAPTURE are plawing well`(@TempDir dir: Path) = runSuspendTest {
+        val script = dir.createScript()
+        val stdout = mutableListOf<String>()
+
+        val output = process(
+            script.absolutePathString(), *ALL,
+            stdout = Consume { it.toList(stdout) },
             stderr = CAPTURE,
         ).unwrap()
 
         output shouldBeEqualTo ERR.toList()
-        consumer shouldBeEqualTo OUT.toList()
+        stdout shouldBeEqualTo OUT.toList()
     }
 
     @Nested

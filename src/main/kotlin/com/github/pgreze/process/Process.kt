@@ -50,7 +50,7 @@ suspend fun process(
         process.inputStream.lineFlow(stdout.consumer)
     }
     if (stderr is Redirect.Consume) {
-        process.inputStream.lineFlow(stderr.consumer)
+        process.errorStream.lineFlow(stderr.consumer)
     }
 
     val output = async {
