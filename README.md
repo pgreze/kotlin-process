@@ -1,4 +1,4 @@
-# kotlin-process [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0) ![Build](https://github.com/pgreze/kotlin-process/workflows/Build/badge.svg?branch=master) [![codecov](https://codecov.io/gh/pgreze/kotlin-process/branch/main/graph/badge.svg?token=PDyl2T0EEB)](https://codecov.io/gh/pgreze/kotlin-process)
+# kotlin-process [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0) ![Build](https://github.com/pgreze/kotlin-process/workflows/Build/badge.svg) [![codecov](https://codecov.io/gh/pgreze/kotlin-process/branch/main/graph/badge.svg?token=PDyl2T0EEB)](https://codecov.io/gh/pgreze/kotlin-process)
 
 Functional Kotlin friendly way to create external system processes by leveraging:
 - Kotlin coroutines
