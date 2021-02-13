@@ -19,6 +19,10 @@ val myDescription = "Counting easily with Kotlin".also { description = it }
 val githubUrl = "https://github.com/pgreze/$myArtifactId"
 
 java {
+    // ProcessBuilder.Redirect.DISCARD requires Java 9+
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+
     withJavadocJar()
     withSourcesJar()
 }
