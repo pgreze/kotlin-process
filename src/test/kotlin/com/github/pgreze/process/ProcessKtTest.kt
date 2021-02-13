@@ -1,33 +1,44 @@
 package com.github.pgreze.process
 
-import com.github.pgreze.process.Redirect.CAPTURE
-import com.github.pgreze.process.Redirect.Consume
-import com.github.pgreze.process.Redirect.PRINT
-import com.github.pgreze.process.Redirect.SILENT
-import com.github.pgreze.process.Redirect.ToFile
+import com.github.pgreze.process.Redirect.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.toList
 import org.amshove.kluent.shouldBeEqualTo
 import org.amshove.kluent.shouldContain
-import org.junit.jupiter.api.DisplayName
-import org.junit.jupiter.api.Nested
-import org.junit.jupiter.api.RepeatedTest
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.*
 import org.junit.jupiter.api.io.TempDir
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
 import java.nio.file.Path
+import kotlin.io.path.ExperimentalPathApi
+import kotlin.io.path.absolutePathString
+import kotlin.io.path.writeText
 
+@ExperimentalPathApi
 @ExperimentalCoroutinesApi
 class ProcessKtTest {
-    companion object {
+    private companion object {
         val OUT = arrayOf("hello world", "no worry")
         val ERR = arrayOf("e=omg", "e=windows")
         val ALL = arrayOf(OUT[0], ERR[0], OUT[1], ERR[1])
-        val CMD = arrayOf("./print.sh", *ALL)
+
+        fun Path.createScript(): Path = resolve("script.sh").also { f ->
+            val text = """
+                #!/usr/bin/env sh
+                for arg in "¥@"
+                do
+                    if [[ "¥arg" == e=* ]]; then
+                      echo "¥arg" 1>&2
+                    else
+                      echo "¥arg"
+                    fi
+                done
+            """.trimIndent().replace("¥", "$") // https://stackoverflow.com/a/30699291/5489877
+            f.writeText(text)
+            f.toFile().setExecutable(true)
+        }
     }
 
     @Nested
@@ -55,11 +66,12 @@ class ProcessKtTest {
 
     @Test
     fun `process redirect to files`(@TempDir dir: Path) = runTestBlocking {
+        val script = dir.createScript()
         val errHeader = "bonjour"
         val out = dir.resolve("out.txt").toFile()
         val err = dir.resolve("err.txt").toFile().also { it.writeText("$errHeader\n") }
         process(
-            *CMD,
+            script.absolutePathString(), *ALL,
             stdout = ToFile(out, append = false),
             stderr = ToFile(err, append = true),
         ).unwrap()
@@ -72,10 +84,11 @@ class ProcessKtTest {
     @DisplayName("process with all outputs as capture is merging them")
     inner class CaptureAllOutputs {
         @RepeatedTest(3) // Repeat to ensure no random order.
-        fun test() = runTestBlocking {
+        fun test(@TempDir dir: Path) = runTestBlocking {
+            val script = dir.createScript()
             val consumer = ByteArrayOutputStream()
             val res = process(
-                *CMD,
+                script.absolutePathString(), *ALL,
                 stdout = CAPTURE,
                 stderr = CAPTURE,
                 consumer = PrintStream(consumer)::println,
@@ -88,10 +101,11 @@ class ProcessKtTest {
     }
 
     @Test
-    fun `use Consume when CAPTURE is unnecessary`() = runTestBlocking {
+    fun `use Consume when CAPTURE is unnecessary`(@TempDir dir: Path) = runTestBlocking {
+        val script = dir.createScript()
         val consumer = mutableListOf<String>()
         val output = process(
-            *CMD,
+            script.absolutePathString(), *ALL,
             stdout = Consume { it.toList(consumer) },
             stderr = CAPTURE,
         ).unwrap()
