@@ -3,7 +3,7 @@ package com.github.pgreze.process
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.runBlocking
 
-fun runTestBlocking(block: suspend CoroutineScope.() -> Unit) {
+fun runSuspendTest(block: suspend CoroutineScope.() -> Unit) {
     runBlocking { block() }
 }
 

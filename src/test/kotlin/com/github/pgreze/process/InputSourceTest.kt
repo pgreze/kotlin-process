@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import java.io.ByteArrayInputStream
-import java.util.*
+import java.util.Collections
 
 @ExperimentalCoroutinesApi
 class InputSourceTest {
@@ -21,7 +21,7 @@ class InputSourceTest {
     }
 
     @Test
-    fun fromString() = runTestBlocking {
+    fun fromString() = runSuspendTest {
         val output = process(
             "cat",
             stdin = InputSource.fromString(STRING),
@@ -31,7 +31,7 @@ class InputSourceTest {
     }
 
     @Test
-    fun fromStream() = runTestBlocking {
+    fun fromStream() = runSuspendTest {
         val inputStream = ByteArrayInputStream(STRING.toByteArray())
         val output = process(
             "cat",
@@ -46,7 +46,7 @@ class InputSourceTest {
     inner class AsyncStreams {
 
         @RepeatedTest(5)
-        fun test() = runTestBlocking {
+        fun test() = runSuspendTest {
             // Used to synchronized producer and consumer
             val channel = Channel<Unit>(1)
             val consumer = Collections.synchronizedList(mutableListOf<String>())

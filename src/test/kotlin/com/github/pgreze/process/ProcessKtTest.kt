@@ -1,11 +1,19 @@
 package com.github.pgreze.process
 
-import com.github.pgreze.process.Redirect.*
+import com.github.pgreze.process.Redirect.CAPTURE
+import com.github.pgreze.process.Redirect.Consume
+import com.github.pgreze.process.Redirect.PRINT
+import com.github.pgreze.process.Redirect.SILENT
+import com.github.pgreze.process.Redirect.ToFile
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.toList
 import org.amshove.kluent.shouldBeEqualTo
 import org.amshove.kluent.shouldContain
-import org.junit.jupiter.api.*
+import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Nested
+import org.junit.jupiter.api.RepeatedTest
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.io.TempDir
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
@@ -26,11 +34,11 @@ class ProcessKtTest {
 
         fun Path.createScript(): Path = resolve("script.sh").also { f ->
             val text = """
-                #!/usr/bin/env sh
+                #!/usr/bin/env bash
                 for arg in "¥@"
                 do
                     if [[ "¥arg" == e=* ]]; then
-                      echo "¥arg" 1>&2
+                      echo 1>&2 "¥arg"
                     else
                       echo "¥arg"
                     fi
@@ -46,7 +54,7 @@ class ProcessKtTest {
     inner class Print {
         @ParameterizedTest
         @ValueSource(booleans = [true, false])
-        fun test(print: Boolean) = runTestBlocking {
+        fun test(print: Boolean) = runSuspendTest {
             val mode = if (print) PRINT else SILENT
             val res = process("echo", "hello world", stdout = mode, stderr = mode)
 
@@ -57,7 +65,13 @@ class ProcessKtTest {
     }
 
     @Test
-    fun `env is allowing to inject environment variables`() = runTestBlocking {
+    fun `process support multiple arguments`() = runSuspendTest {
+        val output = process("echo", *OUT, stdout = CAPTURE).unwrap()
+        output shouldBeEqualTo listOf(OUT.joinToString(" "))
+    }
+
+    @Test
+    fun `env is allowing to inject environment variables`() = runSuspendTest {
         val name = "PROCESS_VAR"
         val value = "42"
         val output = process("env", env = mapOf(name to value), stdout = CAPTURE).unwrap()
@@ -65,7 +79,7 @@ class ProcessKtTest {
     }
 
     @Test
-    fun `process redirect to files`(@TempDir dir: Path) = runTestBlocking {
+    fun `process redirect to files`(@TempDir dir: Path) = runSuspendTest {
         val script = dir.createScript()
         val errHeader = "bonjour"
         val out = dir.resolve("out.txt").toFile()
@@ -84,7 +98,7 @@ class ProcessKtTest {
     @DisplayName("process with all outputs as capture is merging them")
     inner class CaptureAllOutputs {
         @RepeatedTest(3) // Repeat to ensure no random order.
-        fun test(@TempDir dir: Path) = runTestBlocking {
+        fun test(@TempDir dir: Path) = runSuspendTest {
             val script = dir.createScript()
             val consumer = ByteArrayOutputStream()
             val res = process(
@@ -101,7 +115,7 @@ class ProcessKtTest {
     }
 
     @Test
-    fun `use Consume when CAPTURE is unnecessary`(@TempDir dir: Path) = runTestBlocking {
+    fun `use Consume when CAPTURE is unnecessary`(@TempDir dir: Path) = runSuspendTest {
         val script = dir.createScript()
         val consumer = mutableListOf<String>()
         val output = process(
