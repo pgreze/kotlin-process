@@ -10,8 +10,11 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
 import java.io.ByteArrayInputStream
+import java.nio.file.Path
 import java.util.Collections
+import kotlin.io.path.writeText
 
 @ExperimentalCoroutinesApi
 class InputSourceTest {
@@ -27,6 +30,20 @@ class InputSourceTest {
             stdin = InputSource.fromString(STRING),
             stdout = Redirect.CAPTURE
         ).unwrap()
+        output shouldBeEqualTo listOf(STRING)
+    }
+
+    @Test
+    fun fromFile(@TempDir dir: Path) = runSuspendTest {
+        val input = dir.resolve("input.txt").toFile()
+        input.writeText(STRING)
+
+        val output = process(
+            "cat",
+            stdin = InputSource.FromFile(input),
+            stdout = Redirect.CAPTURE,
+        ).unwrap()
+
         output shouldBeEqualTo listOf(STRING)
     }
 
