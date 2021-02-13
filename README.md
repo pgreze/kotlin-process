@@ -1,9 +1,8 @@
 # kotlin-process [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0) ![Build](https://github.com/pgreze/kotlin-process/workflows/Build/badge.svg?branch=master) ![codecov](https://codecov.io/gh/pgreze/kotlin-process/branch/master/graph/badge.svg)
 
-Functional Kotlin friendly way to create external system processes
-by leveraging the powerful but convoluted
-[ProcessBuilder](https://docs.oracle.com/javase/7/docs/api/java/lang/ProcessBuilder.html)
-and Kotlin coroutines.
+Functional Kotlin friendly way to create external system processes by leveraging:
+- Kotlin coroutines
+- the powerful but convoluted [ProcessBuilder](https://docs.oracle.com/javase/7/docs/api/java/lang/ProcessBuilder.html)
 
 ## Installation  [![central](https://maven-badges.herokuapp.com/maven-central/com.github.pgreze/kotlin-process/badge.svg?style={style})](https://search.maven.org/artifact/com.github.pgreze/kotlin-process) [![](https://img.shields.io/badge/Java-11-blue)](https://adoptopenjdk.net/) [![](https://img.shields.io/badge/Kotlin-1.4.30-blue)](https://kotlinlang.org/)
 
