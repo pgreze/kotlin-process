@@ -5,16 +5,16 @@ by leveraging the powerful but convoluted
 [ProcessBuilder](https://docs.oracle.com/javase/7/docs/api/java/lang/ProcessBuilder.html)
 and Kotlin coroutines.
 
-## Installation  [![central](https://maven-badges.herokuapp.com/maven-central/com.github.pgreze/kotlin-process/badge.svg?style={style})](https://search.maven.org/artifact/com.github.pgreze/kotlin-process)
+## Installation  [![central](https://maven-badges.herokuapp.com/maven-central/com.github.pgreze/kotlin-process/badge.svg?style={style})](https://search.maven.org/artifact/com.github.pgreze/kotlin-process) [![](https://img.shields.io/badge/Java-11-blue)](https://adoptopenjdk.net/) [![](https://img.shields.io/badge/Kotlin-1.4.30-blue)](https://kotlinlang.org/)
 
 ```kotlin
+repositories {
+    mavenCentral()
+}
+
 dependencies {
     // Check the 🔝 maven central badge 🔝 for the latest $version
     implementation("com.github.pgreze:kotlin-process:$version")
-}
-
-repositories {
-    jcenter()
 }
 ```
 
@@ -30,12 +30,15 @@ import kotlinx.coroutines.runBlocking
 
 runBlocking {
     val res = process("echo", "hello world")
+
     check(res.resultCode == 0)
+
+    // By default process output is displayed in the console.
     check(res.output == emptyList<String>())
 }
 ```
 
-The next is probably to capture the output stream,
+The next step would probably be to capture the output stream,
 in order to process some data from our own-made script:
 
 ```kotlin
@@ -45,7 +48,7 @@ val output = process(
     // Capture stdout lines to do some operations after
     stdout = Redirect.CAPTURE,
 
-    // Default value, prints to System.err
+    // Default value: prints to System.err
     stderr = Redirect.PRINT,
 
 ).unwrap() // Fails if the resultCode != 0
@@ -55,19 +58,19 @@ println("Success:\n${output.joinToString("\n")}")
 ```
 
 Notice that if you want to capture both stdout and stderr,
-there's no way to differentiate them in the returned output:
+there will be no way to differentiate them in the returned output:
 
 ```kotlin
 val res = process(
     "./long-and-dangerous.sh", arg1, arg2,
 
     // Both streams will be captured,
-    // preserving their orders but mixing them in the result.
+    // preserving their orders but mixing them in the given output.
     stdout = Redirect.CAPTURE,
     stderr = Redirect.CAPTURE,
 
     // Allows to consume line by line without delay the provided output.
-    consumer = { line -> TODO("process a line") },
+    consumer = { line -> TODO("process $line") },
 )
 
 println("Script finished with result=${res.resultCode}")
