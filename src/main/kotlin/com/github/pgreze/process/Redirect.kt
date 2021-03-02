@@ -1,7 +1,7 @@
 package com.github.pgreze.process
 
-import kotlinx.coroutines.flow.Flow
 import java.io.File
+import kotlinx.coroutines.flow.Flow
 
 sealed class Redirect {
     /** Ignores the related stream. */
@@ -39,7 +39,10 @@ sealed class Redirect {
 }
 
 internal fun Redirect.toNative() = when (this) {
-    Redirect.SILENT -> ProcessBuilder.Redirect.DISCARD
+    // Support jdk8: https://stackoverflow.com/a/55629297
+    Redirect.SILENT -> ProcessBuilder.Redirect.to(
+        File(if (System.getProperty("os.name").startsWith("Windows")) "NUL" else "/dev/null")
+    )
     Redirect.PRINT -> ProcessBuilder.Redirect.INHERIT
     Redirect.CAPTURE -> ProcessBuilder.Redirect.PIPE
     is Redirect.ToFile -> when (append) {
