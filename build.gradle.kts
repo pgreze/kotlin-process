@@ -19,16 +19,15 @@ val myDescription = "Counting easily with Kotlin".also { description = it }
 val githubUrl = "https://github.com/pgreze/$myArtifactId"
 
 java {
-    // ProcessBuilder.Redirect.DISCARD requires Java 9+
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
 
     withJavadocJar()
     withSourcesJar()
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-    kotlinOptions.jvmTarget = "11"
+    kotlinOptions.jvmTarget = "1.8"
 }
 configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
     disabledRules.set(setOf("import-ordering"))
