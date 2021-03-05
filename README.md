@@ -149,3 +149,7 @@ process(
     },
 )
 ```
+
+## Alternative(s)
+
+1. https://github.com/jakubriegel/kotlin-shell
