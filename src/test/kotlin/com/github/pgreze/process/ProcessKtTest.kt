@@ -5,8 +5,12 @@ import com.github.pgreze.process.Redirect.Consume
 import com.github.pgreze.process.Redirect.PRINT
 import com.github.pgreze.process.Redirect.SILENT
 import com.github.pgreze.process.Redirect.ToFile
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
 import org.amshove.kluent.shouldBeEqualTo
 import org.amshove.kluent.shouldContain
 import org.junit.jupiter.api.DisplayName
@@ -19,6 +23,7 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.InputStream
 import java.io.PrintStream
 import java.nio.file.Path
 import kotlin.io.path.ExperimentalPathApi
@@ -157,6 +162,36 @@ class ProcessKtTest {
 
         output shouldBeEqualTo ERR.toList()
         stdout shouldBeEqualTo OUT.toList()
+    }
+
+    @Test
+    fun `job cancellation should stop the process`() = runSuspendTest {
+        class EndlessInputStream : InputStream() {
+            override fun read(): Int = 1
+        }
+        val inputStream = EndlessInputStream()
+
+        var visitedCancelledBlock = false
+        val job = launch(Dispatchers.IO) {
+            try {
+                val ret = process("cat", stdin = InputSource.fromInputStream(inputStream))
+                throw AssertionError("Process completed despite being cancelled")
+            } catch (e: CancellationException) {
+                visitedCancelledBlock = true
+            }
+        }
+
+        println("Wait")
+        delay(500L)
+
+        println("Cancel")
+        job.cancel()
+        delay(500L)
+
+        println("Assert")
+        job.isCancelled shouldBeEqualTo true
+        job.isCompleted shouldBeEqualTo true
+        visitedCancelledBlock shouldBeEqualTo true
     }
 
     @Nested

@@ -90,7 +90,7 @@ dependencies {
     implementation(kotlin("stdlib-jdk8"))
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.4.2")
 
-    testImplementation("org.amshove.kluent:kluent:1.61")
+    testImplementation("org.amshove.kluent:kluent:1.68")
     val junit5 = "5.7.1"
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junit5")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junit5")
