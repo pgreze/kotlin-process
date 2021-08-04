@@ -72,8 +72,12 @@ suspend fun process(
             stderr == Redirect.CAPTURE ->
                 process.errorStream
             else -> null
-        }?.lineFlow { f -> f.map { it.also { consumer(it) } }.toList() }
-            ?: emptyList()
+        }?.lineFlow { f ->
+            f.map {
+                yield()
+                it.also { consumer(it) }
+            }.toList()
+        } ?: emptyList()
     }
 
     val input = async {

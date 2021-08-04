@@ -24,7 +24,6 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 import java.io.ByteArrayOutputStream
 import java.io.File
-import java.io.InputStream
 import java.io.PrintStream
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit
@@ -166,27 +165,35 @@ class ProcessKtTest {
         stdout shouldBeEqualTo OUT.toList()
     }
 
-    @Test
-    @Timeout(value = 3, unit = TimeUnit.SECONDS)
-    fun `job cancellation should destroy the process`() = runSuspendTest {
-        var visitedCancelledBlock = false
-        val job = launch(Dispatchers.IO) {
-            try {
-                val ret = process("cat") // cat without args is an endless process.
-                throw AssertionError("Process completed despite being cancelled: $ret")
-            } catch (e: CancellationException) {
-                visitedCancelledBlock = true
+    @Nested
+    @DisplayName("print to console or not")
+    inner class Cancellation {
+        @ParameterizedTest
+        @ValueSource(booleans = [true, false])
+        @Timeout(value = 3, unit = TimeUnit.SECONDS)
+        fun `job cancellation should destroy the process`(captureStdout: Boolean) = runSuspendTest {
+            var visitedCancelledBlock = false
+            val job = launch(Dispatchers.IO) {
+                try {
+                    val ret = process(
+                        "cat", // cat without args is an endless process.
+                        stdout = if (captureStdout) CAPTURE else SILENT
+                    )
+                    throw AssertionError("Process completed despite being cancelled: $ret")
+                } catch (e: CancellationException) {
+                    visitedCancelledBlock = true
+                }
             }
+
+            // Introduce delays to be sure the job was started before being cancelled.
+            delay(500L)
+            job.cancel()
+            delay(500L)
+
+            job.isCancelled shouldBeEqualTo true
+            job.isCompleted shouldBeEqualTo true
+            visitedCancelledBlock shouldBeEqualTo true
         }
-
-        // Introduce delays to be sure the job was started before being cancelled.
-        delay(500L)
-        job.cancel()
-        delay(500L)
-
-        job.isCancelled shouldBeEqualTo true
-        job.isCompleted shouldBeEqualTo true
-        visitedCancelledBlock shouldBeEqualTo true
     }
 
     @Nested
