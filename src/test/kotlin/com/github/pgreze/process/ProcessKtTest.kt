@@ -17,6 +17,7 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.io.TempDir
 import org.junit.jupiter.params.ParameterizedTest
@@ -26,6 +27,7 @@ import java.io.File
 import java.io.InputStream
 import java.io.PrintStream
 import java.nio.file.Path
+import java.util.concurrent.TimeUnit
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.absolutePathString
 import kotlin.io.path.writeText
@@ -165,30 +167,23 @@ class ProcessKtTest {
     }
 
     @Test
-    fun `job cancellation should stop the process`() = runSuspendTest {
-        class EndlessInputStream : InputStream() {
-            override fun read(): Int = 1
-        }
-        val inputStream = EndlessInputStream()
-
+    @Timeout(value = 3, unit = TimeUnit.SECONDS)
+    fun `job cancellation should destroy the process`() = runSuspendTest {
         var visitedCancelledBlock = false
         val job = launch(Dispatchers.IO) {
             try {
-                val ret = process("cat", stdin = InputSource.fromInputStream(inputStream))
-                throw AssertionError("Process completed despite being cancelled")
+                val ret = process("cat") // cat without args is an endless process.
+                throw AssertionError("Process completed despite being cancelled: $ret")
             } catch (e: CancellationException) {
                 visitedCancelledBlock = true
             }
         }
 
-        println("Wait")
+        // Introduce delays to be sure the job was started before being cancelled.
         delay(500L)
-
-        println("Cancel")
         job.cancel()
         delay(500L)
 
-        println("Assert")
         job.isCancelled shouldBeEqualTo true
         job.isCompleted shouldBeEqualTo true
         visitedCancelledBlock shouldBeEqualTo true
