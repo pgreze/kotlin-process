@@ -15,7 +15,7 @@ val myGroup = "com.github.pgreze".also { group = it }
 val myArtifactId = "kotlin-process"
 val tagVersion = System.getenv("GITHUB_REF")?.split('/')?.last()
 val myVersion = (tagVersion?.trimStart('v') ?: "WIP").also { version = it }
-val myDescription = "Counting easily with Kotlin".also { description = it }
+val myDescription = "Kotlin friendly way to run an external process".also { description = it }
 val githubUrl = "https://github.com/pgreze/$myArtifactId"
 
 java {
