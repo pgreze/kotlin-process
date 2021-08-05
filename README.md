@@ -17,6 +17,13 @@ dependencies {
 }
 ```
 
+Or in your kotlin script:
+
+```kotlin
+@file:DependsOn("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.1")
+@file:DependsOn("com.github.pgreze:kotlin-process:$version")
+```
+
 ## Usage [![](https://img.shields.io/badge/dokka-read-blue)](https://kotlin-process.netlify.app/)
 
 ### Launch a script and consume its results
