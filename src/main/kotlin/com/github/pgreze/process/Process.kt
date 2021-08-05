@@ -35,6 +35,8 @@ suspend fun process(
     env: Map<String, String>? = null,
     /** Override the process working directory. */
     directory: File? = null,
+    /** Determine if process should be destroyed forcibly on job cancellation */
+    destroyForcibly: Boolean = false,
     /** Consume without delay all streams configured with [Redirect.CAPTURE] */
     consumer: suspend (String) -> Unit = {},
 ): ProcessResult = coroutineScopeIO {
@@ -95,7 +97,14 @@ suspend fun process(
             resultCode = runInterruptible { process.waitFor() },
         )
     } catch (e: CancellationException) {
-        process.destroy()
+        if(destroyForcibly)
+        {
+            process.destroyForcibly()
+        }
+        else
+        {
+            process.destroy()
+        }
         throw e
     }
 }
