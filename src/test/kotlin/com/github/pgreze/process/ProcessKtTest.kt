@@ -5,14 +5,19 @@ import com.github.pgreze.process.Redirect.Consume
 import com.github.pgreze.process.Redirect.PRINT
 import com.github.pgreze.process.Redirect.SILENT
 import com.github.pgreze.process.Redirect.ToFile
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
 import org.amshove.kluent.shouldBeEqualTo
 import org.amshove.kluent.shouldContain
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.io.TempDir
 import org.junit.jupiter.params.ParameterizedTest
@@ -21,6 +26,7 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.PrintStream
 import java.nio.file.Path
+import java.util.concurrent.TimeUnit
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.absolutePathString
 import kotlin.io.path.writeText
@@ -157,6 +163,37 @@ class ProcessKtTest {
 
         output shouldBeEqualTo ERR.toList()
         stdout shouldBeEqualTo OUT.toList()
+    }
+
+    @Nested
+    @DisplayName("print to console or not")
+    inner class Cancellation {
+        @ParameterizedTest
+        @ValueSource(booleans = [true, false])
+        @Timeout(value = 3, unit = TimeUnit.SECONDS)
+        fun `job cancellation should destroy the process`(captureStdout: Boolean) = runSuspendTest {
+            var visitedCancelledBlock = false
+            val job = launch(Dispatchers.IO) {
+                try {
+                    val ret = process(
+                        "cat", // cat without args is an endless process.
+                        stdout = if (captureStdout) CAPTURE else SILENT
+                    )
+                    throw AssertionError("Process completed despite being cancelled: $ret")
+                } catch (e: CancellationException) {
+                    visitedCancelledBlock = true
+                }
+            }
+
+            // Introduce delays to be sure the job was started before being cancelled.
+            delay(500L)
+            job.cancel()
+            delay(500L)
+
+            job.isCancelled shouldBeEqualTo true
+            job.isCompleted shouldBeEqualTo true
+            visitedCancelledBlock shouldBeEqualTo true
+        }
     }
 
     @Nested

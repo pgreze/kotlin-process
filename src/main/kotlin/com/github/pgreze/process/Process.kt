@@ -1,16 +1,28 @@
 package com.github.pgreze.process
 
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.yield
 import java.io.File
 import java.io.InputStream
+
+private suspend fun <R> coroutineScopeIO(block: suspend CoroutineScope.() -> R) =
+    withContext(Dispatchers.IO) {
+        // Encapsulates all async calls in the current scope.
+        // https://elizarov.medium.com/structured-concurrency-722d765aa952
+        coroutineScope(block)
+    }
 
 @ExperimentalCoroutinesApi
 @Suppress("BlockingMethodInNonBlockingContext", "LongParameterList", "ComplexMethod")
@@ -19,13 +31,13 @@ suspend fun process(
     stdin: InputSource? = null,
     stdout: Redirect = Redirect.PRINT,
     stderr: Redirect = Redirect.PRINT,
-    /** Allowing to append new environment variables during this process's invocation. */
+    /** Extend with new environment variables during this process's invocation. */
     env: Map<String, String>? = null,
     /** Override the process working directory. */
     directory: File? = null,
     /** Consume without delay all streams configured with [Redirect.CAPTURE] */
     consumer: suspend (String) -> Unit = {},
-): ProcessResult = withContext(Dispatchers.IO) {
+): ProcessResult = coroutineScopeIO {
     // Based on the fact that it's hardcore to achieve manually:
     // https://stackoverflow.com/a/4959696
     val captureAll = stdout == stderr && stderr == Redirect.CAPTURE
@@ -60,8 +72,12 @@ suspend fun process(
             stderr == Redirect.CAPTURE ->
                 process.errorStream
             else -> null
-        }?.lineFlow { f -> f.map { it.also { consumer(it) } }.toList() }
-            ?: emptyList()
+        }?.lineFlow { f ->
+            f.map {
+                yield()
+                it.also { consumer(it) }
+            }.toList()
+        } ?: emptyList()
     }
 
     val input = async {
@@ -70,13 +86,18 @@ suspend fun process(
         }
     }
 
-    @Suppress("UNCHECKED_CAST")
-    return@withContext ProcessResult(
-        // Consume the output before waitFor,
-        // ensuring no content is skipped.
-        output = awaitAll(input, output).last() as List<String>,
-        resultCode = process.waitFor(),
-    )
+    try {
+        @Suppress("UNCHECKED_CAST")
+        ProcessResult(
+            // Consume the output before waitFor,
+            // ensuring no content is skipped.
+            output = awaitAll(input, output).last() as List<String>,
+            resultCode = runInterruptible { process.waitFor() },
+        )
+    } catch (e: CancellationException) {
+        process.destroy()
+        throw e
+    }
 }
 
 private suspend fun <T> InputStream.lineFlow(block: suspend (Flow<String>) -> T): T =
