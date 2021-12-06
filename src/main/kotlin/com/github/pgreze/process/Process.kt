@@ -16,6 +16,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
 import java.io.File
 import java.io.InputStream
+import java.nio.charset.Charset
 
 private suspend fun <R> coroutineScopeIO(block: suspend CoroutineScope.() -> R) =
     withContext(Dispatchers.IO) {
@@ -31,6 +32,7 @@ suspend fun process(
     stdin: InputSource? = null,
     stdout: Redirect = Redirect.PRINT,
     stderr: Redirect = Redirect.PRINT,
+    charset: Charset = Charsets.UTF_8,
     /** Extend with new environment variables during this process's invocation. */
     env: Map<String, String>? = null,
     /** Override the process working directory. */
@@ -61,10 +63,10 @@ suspend fun process(
 
     // Handles async consumptions before the blocking output handling.
     if (stdout is Redirect.Consume) {
-        process.inputStream.lineFlow(stdout.consumer)
+        process.inputStream.lineFlow(charset, stdout.consumer)
     }
     if (stderr is Redirect.Consume) {
-        process.errorStream.lineFlow(stderr.consumer)
+        process.errorStream.lineFlow(charset, stderr.consumer)
     }
 
     val output = async {
@@ -74,7 +76,7 @@ suspend fun process(
             stderr == Redirect.CAPTURE ->
                 process.errorStream
             else -> null
-        }?.lineFlow { f ->
+        }?.lineFlow(charset) { f ->
             f.map {
                 yield()
                 it.also { consumer(it) }
@@ -105,5 +107,5 @@ suspend fun process(
     }
 }
 
-private suspend fun <T> InputStream.lineFlow(block: suspend (Flow<String>) -> T): T =
-    bufferedReader().use { it.lineSequence().asFlow().let { f -> block(f) } }
+private suspend fun <T> InputStream.lineFlow(charset: Charset, block: suspend (Flow<String>) -> T): T =
+    bufferedReader(charset).use { it.lineSequence().asFlow().let { f -> block(f) } }

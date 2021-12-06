@@ -22,9 +22,11 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.io.TempDir
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
+import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.PrintStream
+import java.nio.charset.Charset
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit
 import kotlin.io.path.ExperimentalPathApi
@@ -75,6 +77,20 @@ class ProcessKtTest {
     fun `process support multiple arguments`() = runSuspendTest {
         val output = process("echo", *OUT, stdout = CAPTURE).unwrap()
         output shouldBeEqualTo listOf(OUT.joinToString(" "))
+    }
+
+    @Test
+    fun `process support charset`() = runSuspendTest {
+        val charset = Charset.forName("unicode")
+        val text = "hello world"
+        val inputStream = ByteArrayInputStream(text.toByteArray(charset))
+        val output = process(
+            "cat",
+            stdin = InputSource.fromInputStream(inputStream),
+            stdout = CAPTURE,
+            charset = charset,
+        ).unwrap()
+        output shouldBeEqualTo listOf(text)
     }
 
     @Test
