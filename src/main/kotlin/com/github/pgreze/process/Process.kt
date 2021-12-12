@@ -3,7 +3,6 @@ package com.github.pgreze.process
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -24,7 +23,6 @@ private suspend fun <R> coroutineScopeIO(block: suspend CoroutineScope.() -> R) 
         coroutineScope(block)
     }
 
-@ExperimentalCoroutinesApi
 @Suppress("BlockingMethodInNonBlockingContext", "LongParameterList", "ComplexMethod")
 suspend fun process(
     vararg command: String,
