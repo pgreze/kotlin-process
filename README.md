@@ -12,8 +12,8 @@ repositories {
 }
 
 dependencies {
-    // Check the 🔝 maven central badge 🔝 for the latest $version
-    implementation("com.github.pgreze:kotlin-process:$version")
+    // Check the 🔝 maven central badge 🔝 for the latest $kotlinProcessVersion
+    implementation("com.github.pgreze:kotlin-process:$kotlinProcessVersion")
 }
 ```
 
@@ -21,7 +21,7 @@ Or in your kotlin script:
 
 ```kotlin
 @file:DependsOn("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.1")
-@file:DependsOn("com.github.pgreze:kotlin-process:$version")
+@file:DependsOn("com.github.pgreze:kotlin-process:$kotlinProcessVersion")
 ```
 
 ## Usage [![](https://img.shields.io/badge/dokka-read-blue)](https://kotlin-process.netlify.app/)
