@@ -43,7 +43,9 @@ jobs:
           export SIGNING_SECRET_KEY_RING_FILE=secret-key.gpg
           echo $SIGNING_SECRET_KEY_RING_CONTENT | base64 -di > $SIGNING_SECRET_KEY_RING_FILE
           ./gradlew assemble dokkaHtml
-          ./gradlew --max-workers 1 publishMavenPublicationToSonatypeRepository closeAndReleaseRepository
+          ./gradlew --max-workers 1 -Dorg.gradle.parallel=false \
+            publishMavenPublicationToSonatypeRepository \
+            closeAndReleaseSonatypeStagingRepository
       - name: Publish Dokka
         uses: netlify/actions/cli@master
         with:

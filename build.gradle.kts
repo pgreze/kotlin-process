@@ -6,7 +6,7 @@ plugins {
     id("io.gitlab.arturbosch.detekt")
     `maven-publish`
     signing
-    id("io.codearte.nexus-staging")
+    id("io.github.gradle-nexus.publish-plugin")
 }
 
 val myGroup = "com.github.pgreze"
@@ -133,10 +133,16 @@ signing {
     sign(publishing.publications)
 }
 
-// https://github.com/Codearte/gradle-nexus-staging-plugin
-nexusStaging {
-    packageGroup = myGroup
-    stagingProfileId = propOrEnv("sonatype.staging.profile.id", "SONATYPE_STAGING_PROFILE_ID")
-    username = ossrhUsername
-    password = ossrhPassword
+nexusPublishing {
+    packageGroup.set(myGroup)
+    repositories {
+        sonatype {
+            stagingProfileId.set(propOrEnv("sonatype.staging.profile.id", "SONATYPE_STAGING_PROFILE_ID"))
+            username.set(ossrhUsername)
+            password.set(ossrhPassword)
+            // Only for users registered in Sonatype after 24 Feb 2021
+            nexusUrl.set(uri("https://s01.oss.sonatype.org/service/local/"))
+            snapshotRepositoryUrl.set(uri("https://s01.oss.sonatype.org/content/repositories/snapshots/"))
+        }
+    }
 }
