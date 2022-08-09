@@ -39,7 +39,7 @@ class ProcessKtTest {
 
         fun Path.createScript(): Path = resolve("script.sh").also { f ->
             val text = """
-                #!/usr/bin/env sh
+                #!/usr/bin/env bash
                 for arg in "¥@"
                 do
                     if [[ "¥arg" == e=* ]]; then
