@@ -33,8 +33,6 @@ import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.absolutePathString
 import kotlin.io.path.writeText
 
-@ExperimentalPathApi
-@ExperimentalCoroutinesApi
 class ProcessKtTest {
     private companion object {
         val OUT = arrayOf("hello world", "no worry")
@@ -43,7 +41,7 @@ class ProcessKtTest {
 
         fun Path.createScript(): Path = resolve("script.sh").also { f ->
             val text = """
-                #!/usr/bin/env bash
+                #!/usr/bin/env sh
                 for arg in "¥@"
                 do
                     if [[ "¥arg" == e=* ]]; then
