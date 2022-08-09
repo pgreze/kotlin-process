@@ -50,40 +50,6 @@ tasks.jacocoTestReport {
     }
 }
 
-val moveCss by tasks.registering {
-    description = "Move style.css in the base folder, easier for distribution."
-    fun File.rewriteStyleLocations() {
-        readText().replace("../style.css", "style.css")
-            .also { writeText(it) }
-    }
-    fun File.recursivelyRewriteStyleLocations() {
-        list()?.map(this::resolve)?.forEach {
-            if (it.isDirectory) it.recursivelyRewriteStyleLocations() else it.rewriteStyleLocations()
-        }
-    }
-    doLast {
-        val dokkaOutputDirectory = file(tasks.dokka.get().outputDirectory)
-        val baseFolder = dokkaOutputDirectory.resolve(myArtifactId)
-        baseFolder.recursivelyRewriteStyleLocations()
-        dokkaOutputDirectory.resolve("style.css").also {
-            it.renameTo(baseFolder.resolve(it.name))
-        }
-    }
-}
-tasks.dokka {
-    outputFormat = "html"
-    outputDirectory = "$buildDir/dokka"
-    configuration {
-        sourceLink {
-            // URL showing where the source code can be accessed through the web browser
-            url = "$githubUrl/tree/${tagVersion ?: "master"}/"
-            // Suffix which is used to append the line number to the URL. Use #L for GitHub
-            lineSuffix = "#L"
-        }
-    }
-    finalizedBy(moveCss)
-}
-
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
     implementation(KotlinX.coroutines.core)
