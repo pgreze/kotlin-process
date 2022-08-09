@@ -1,51 +1,52 @@
-import java.util.Properties
-
 plugins {
-    kotlin("jvm") version "1.6.0"
-    id("org.jetbrains.dokka") version "0.10.1"
+    kotlin("jvm")
+    id("org.jetbrains.dokka")
     jacoco
-    id("org.jlleitschuh.gradle.ktlint") version "10.2.0"
-    id("io.gitlab.arturbosch.detekt") version "1.19.0"
+    id("org.jlleitschuh.gradle.ktlint")
+    id("io.gitlab.arturbosch.detekt")
     `maven-publish`
     signing
-    id("io.codearte.nexus-staging") version "0.30.0"
+    id("io.codearte.nexus-staging")
 }
 
-val myGroup = "com.github.pgreze".also { group = it }
+val myGroup = "com.github.pgreze"
+    .also { group = it }
 val myArtifactId = "kotlin-process"
 val tagVersion = System.getenv("GITHUB_REF")?.split('/')?.last()
-val myVersion = (tagVersion?.trimStart('v') ?: "WIP").also { version = it }
-val myDescription = "Kotlin friendly way to run an external process".also { description = it }
+val myVersion = (tagVersion?.trimStart('v') ?: "WIP")
+    .also { version = it }
+val myDescription = "Kotlin friendly way to run an external process"
+    .also { description = it }
 val githubUrl = "https://github.com/pgreze/$myArtifactId"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
 
-    withJavadocJar()
     withSourcesJar()
+    withJavadocJar()
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
     kotlinOptions.jvmTarget = "1.8"
 }
-configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
-    disabledRules.set(setOf("import-ordering"))
-}
-configure<io.gitlab.arturbosch.detekt.extensions.DetektExtension> {
-    baseline = file("detekt-baseline.xml")
-}
-jacoco {
-    toolVersion = "0.8.7"
-}
+
 tasks.test {
     useJUnitPlatform()
     finalizedBy(tasks.jacocoTestReport)
 }
+
+configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
+    disabledRules.set(setOf("import-ordering"))
+}
+
+jacoco {
+    toolVersion = "0.8.7"
+}
 tasks.jacocoTestReport {
     reports {
-        xml.isEnabled = true
-        html.isEnabled = System.getenv("CI") != "true"
+        xml.required.set(true)
+        html.required.set(System.getenv("CI") != "true")
     }
 }
 
@@ -83,30 +84,24 @@ tasks.dokka {
     finalizedBy(moveCss)
 }
 
-repositories {
-    jcenter()
-    mavenCentral()
-}
-
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.2")
+    implementation(KotlinX.coroutines.core)
 
-    testImplementation("org.amshove.kluent:kluent:1.68")
-    val junit5 = "5.8.2"
-    testImplementation("org.junit.jupiter:junit-jupiter-api:$junit5")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junit5")
-    testImplementation("org.junit.jupiter:junit-jupiter-params:$junit5")
+    testImplementation("org.amshove.kluent:kluent:_")
+    testImplementation(platform(Testing.junit.bom))
+    testImplementation("org.junit.jupiter:junit-jupiter-api")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
+    testImplementation("org.junit.jupiter:junit-jupiter-params")
 }
 
 //
 // Publishing
 //
 
-val local = rootProject.file("local.properties")
-    .takeIf(File::exists)
-    ?.let { f -> f.reader().use { Properties().also { p -> p.load(it) } } }
-val propOrEnv: (String, String) -> String? = { key, envName -> local?.get(key)?.toString() ?: System.getenv(envName) }
+val propOrEnv: (String, String) -> String? = { key, envName ->
+    project.properties.getOrElse(key, defaultValue = { System.getenv(envName) })?.toString()
+}
 
 val ossrhUsername = propOrEnv("ossrh.username", "OSSRH_USERNAME")
 val ossrhPassword = propOrEnv("ossrh.password", "OSSRH_PASSWORD")

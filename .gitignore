@@ -60,3 +60,4 @@ fastlane/readme.md
 vcs.xml
 
 .netlify
+/*.kts

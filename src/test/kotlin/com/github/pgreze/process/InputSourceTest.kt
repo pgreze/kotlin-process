@@ -1,5 +1,8 @@
 package com.github.pgreze.process
 
+import java.io.ByteArrayInputStream
+import java.nio.file.Path
+import java.util.Collections
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
@@ -11,10 +14,6 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
-import java.io.ByteArrayInputStream
-import java.nio.file.Path
-import java.util.Collections
-import kotlin.io.path.writeText
 
 @ExperimentalCoroutinesApi
 class InputSourceTest {

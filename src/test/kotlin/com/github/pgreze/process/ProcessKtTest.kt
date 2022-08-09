@@ -5,9 +5,17 @@ import com.github.pgreze.process.Redirect.Consume
 import com.github.pgreze.process.Redirect.PRINT
 import com.github.pgreze.process.Redirect.SILENT
 import com.github.pgreze.process.Redirect.ToFile
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.io.File
+import java.io.PrintStream
+import java.nio.charset.Charset
+import java.nio.file.Path
+import java.util.concurrent.TimeUnit
+import kotlin.io.path.absolutePathString
+import kotlin.io.path.writeText
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
@@ -22,19 +30,7 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.io.TempDir
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
-import java.io.File
-import java.io.PrintStream
-import java.nio.charset.Charset
-import java.nio.file.Path
-import java.util.concurrent.TimeUnit
-import kotlin.io.path.ExperimentalPathApi
-import kotlin.io.path.absolutePathString
-import kotlin.io.path.writeText
 
-@ExperimentalPathApi
-@ExperimentalCoroutinesApi
 class ProcessKtTest {
     private companion object {
         val OUT = arrayOf("hello world", "no worry")
