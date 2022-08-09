@@ -1,5 +1,8 @@
 package com.github.pgreze.process
 
+import java.io.File
+import java.io.InputStream
+import java.nio.charset.Charset
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -13,9 +16,6 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
-import java.io.File
-import java.io.InputStream
-import java.nio.charset.Charset
 
 private suspend fun <R> coroutineScopeIO(block: suspend CoroutineScope.() -> R) =
     withContext(Dispatchers.IO) {

@@ -30,23 +30,23 @@ java {
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
     kotlinOptions.jvmTarget = "1.8"
 }
-configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
-    disabledRules.set(setOf("import-ordering"))
-}
-configure<io.gitlab.arturbosch.detekt.extensions.DetektExtension> {
-    baseline = file("detekt-baseline.xml")
-}
-jacoco {
-    toolVersion = "0.8.7"
-}
+
 tasks.test {
     useJUnitPlatform()
     finalizedBy(tasks.jacocoTestReport)
 }
+
+configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
+    disabledRules.set(setOf("import-ordering"))
+}
+
+jacoco {
+    toolVersion = "0.8.7"
+}
 tasks.jacocoTestReport {
     reports {
-        xml.isEnabled = true
-        html.isEnabled = System.getenv("CI") != "true"
+        xml.required.set(true)
+        html.required.set(System.getenv("CI") != "true")
     }
 }
 
@@ -85,7 +85,6 @@ tasks.dokka {
 }
 
 repositories {
-    jcenter()
     mavenCentral()
 }
 
