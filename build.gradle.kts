@@ -1,12 +1,12 @@
 plugins {
-    kotlin("jvm") version "1.6.0"
-    id("org.jetbrains.dokka") version "0.10.1"
+    kotlin("jvm")
+    id("org.jetbrains.dokka")
     jacoco
-    id("org.jlleitschuh.gradle.ktlint") version "10.2.0"
-    id("io.gitlab.arturbosch.detekt") version "1.19.0"
+    id("org.jlleitschuh.gradle.ktlint")
+    id("io.gitlab.arturbosch.detekt")
     `maven-publish`
     signing
-    id("io.codearte.nexus-staging") version "0.30.0"
+    id("io.codearte.nexus-staging")
 }
 
 val myGroup = "com.github.pgreze"
@@ -84,19 +84,15 @@ tasks.dokka {
     finalizedBy(moveCss)
 }
 
-repositories {
-    mavenCentral()
-}
-
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:_")
 
-    testImplementation("org.amshove.kluent:kluent:1.68")
-    val junit5 = "5.8.2"
-    testImplementation("org.junit.jupiter:junit-jupiter-api:$junit5")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junit5")
-    testImplementation("org.junit.jupiter:junit-jupiter-params:$junit5")
+    testImplementation("org.amshove.kluent:kluent:_")
+    testImplementation(platform(Testing.junit.bom))
+    testImplementation("org.junit.jupiter:junit-jupiter-api")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
+    testImplementation("org.junit.jupiter:junit-jupiter-params")
 }
 
 //
