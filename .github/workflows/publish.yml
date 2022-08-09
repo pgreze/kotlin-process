@@ -46,11 +46,11 @@ jobs:
           ./gradlew --max-workers 1 publishMavenPublicationToSonatypeRepository closeAndReleaseRepository
       # Documentation
       - name: Generate Dokka
-        run: ./gradlew :dokka
+        run: ./gradlew dokkaHtml
       - name: Publish Dokka
         uses: netlify/actions/cli@master
         with:
-          args: deploy --dir=build/dokka/kounter --prod
+          args: deploy --dir=build/dokka/html --prod
         env:
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
