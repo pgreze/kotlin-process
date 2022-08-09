@@ -1,14 +1,14 @@
 import java.util.Properties
 
 plugins {
-    kotlin("jvm") version "1.4.30"
+    kotlin("jvm") version "1.6.0"
     id("org.jetbrains.dokka") version "0.10.1"
     jacoco
-    id("org.jlleitschuh.gradle.ktlint") version "10.0.0"
-    id("io.gitlab.arturbosch.detekt") version "1.15.0"
+    id("org.jlleitschuh.gradle.ktlint") version "10.2.0"
+    id("io.gitlab.arturbosch.detekt") version "1.19.0"
     `maven-publish`
     signing
-    id("io.codearte.nexus-staging") version "0.22.0"
+    id("io.codearte.nexus-staging") version "0.30.0"
 }
 
 val myGroup = "com.github.pgreze".also { group = it }
@@ -35,7 +35,9 @@ configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
 configure<io.gitlab.arturbosch.detekt.extensions.DetektExtension> {
     baseline = file("detekt-baseline.xml")
 }
-
+jacoco {
+    toolVersion = "0.8.7"
+}
 tasks.test {
     useJUnitPlatform()
     finalizedBy(tasks.jacocoTestReport)
@@ -88,10 +90,10 @@ repositories {
 
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.4.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.2")
 
     testImplementation("org.amshove.kluent:kluent:1.68")
-    val junit5 = "5.7.1"
+    val junit5 = "5.8.2"
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junit5")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junit5")
     testImplementation("org.junit.jupiter:junit-jupiter-params:$junit5")

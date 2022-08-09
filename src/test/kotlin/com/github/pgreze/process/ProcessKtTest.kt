@@ -174,6 +174,7 @@ class ProcessKtTest {
         fun `job cancellation should destroy the process`(captureStdout: Boolean) = runSuspendTest {
             var visitedCancelledBlock = false
             val job = launch(Dispatchers.IO) {
+                @Suppress("SwallowedException")
                 try {
                     val ret = process(
                         "cat", // cat without args is an endless process.
