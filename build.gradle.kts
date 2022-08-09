@@ -86,7 +86,7 @@ tasks.dokka {
 
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:_")
+    implementation(KotlinX.coroutines.core)
 
     testImplementation("org.amshove.kluent:kluent:_")
     testImplementation(platform(Testing.junit.bom))
