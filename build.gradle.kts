@@ -137,12 +137,8 @@ nexusPublishing {
     packageGroup.set(myGroup)
     repositories {
         sonatype {
-            stagingProfileId.set(propOrEnv("sonatype.staging.profile.id", "SONATYPE_STAGING_PROFILE_ID"))
             username.set(ossrhUsername)
             password.set(ossrhPassword)
-            // Only for users registered in Sonatype after 24 Feb 2021
-            nexusUrl.set(uri("https://s01.oss.sonatype.org/service/local/"))
-            snapshotRepositoryUrl.set(uri("https://s01.oss.sonatype.org/content/repositories/snapshots/"))
         }
     }
 }
