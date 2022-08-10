@@ -4,7 +4,7 @@ Functional Kotlin friendly way to create external system processes by leveraging
 - Kotlin coroutines
 - the powerful but convoluted [ProcessBuilder](https://docs.oracle.com/javase/7/docs/api/java/lang/ProcessBuilder.html)
 
-## Installation  [![central](https://maven-badges.herokuapp.com/maven-central/com.github.pgreze/kotlin-process/badge.svg?style={style})](https://search.maven.org/artifact/com.github.pgreze/kotlin-process) [![](https://img.shields.io/badge/Java-8-blue)](https://adoptopenjdk.net/) [![](https://img.shields.io/badge/Kotlin-1.4.30-blue)](https://kotlinlang.org/)
+## Installation  [![central](https://maven-badges.herokuapp.com/maven-central/com.github.pgreze/kotlin-process/badge.svg?style={style})](https://search.maven.org/artifact/com.github.pgreze/kotlin-process) [![](https://img.shields.io/badge/Java-8-blue)](https://adoptopenjdk.net/) [![](https://img.shields.io/badge/Kotlin-1.6.21-blue)](https://kotlinlang.org/)
 
 ```kotlin
 repositories {
