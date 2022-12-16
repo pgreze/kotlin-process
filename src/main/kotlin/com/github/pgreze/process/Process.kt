@@ -25,6 +25,7 @@ private suspend fun <R> coroutineScopeIO(block: suspend CoroutineScope.() -> R) 
     }
 
 @Suppress("BlockingMethodInNonBlockingContext", "LongParameterList", "ComplexMethod")
+@JvmOverloads
 suspend fun process(
     vararg command: String,
     stdin: InputSource? = null,
@@ -71,8 +72,10 @@ suspend fun process(
         when {
             captureAll || stdout == Redirect.CAPTURE ->
                 process.inputStream
+
             stderr == Redirect.CAPTURE ->
                 process.errorStream
+
             else -> null
         }?.lineFlow(charset) { f ->
             f.map {
