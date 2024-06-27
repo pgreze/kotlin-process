@@ -18,6 +18,12 @@ sealed class InputSource {
      */
     class FromStream(val handler: suspend (OutputStream) -> Unit) : InputSource()
 
+    /**
+     * Natively supported parent provided redirection.
+     * @see ProcessBuilder.Redirect.INHERIT
+     */
+    object FromParent : InputSource()
+
     @Suppress("BlockingMethodInNonBlockingContext")
     companion object {
         @JvmStatic
@@ -41,4 +47,5 @@ sealed class InputSource {
 internal fun InputSource.toNative() = when (this) {
     is InputSource.FromFile -> ProcessBuilder.Redirect.from(file)
     is InputSource.FromStream -> ProcessBuilder.Redirect.PIPE
+    is InputSource.FromParent -> ProcessBuilder.Redirect.INHERIT
 }

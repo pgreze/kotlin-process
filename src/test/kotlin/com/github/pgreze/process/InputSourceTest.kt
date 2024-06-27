@@ -23,16 +23,6 @@ class InputSourceTest {
     }
 
     @Test
-    fun fromString() = runSuspendTest {
-        val output = process(
-            "cat",
-            stdin = InputSource.fromString(STRING),
-            stdout = Redirect.CAPTURE
-        ).unwrap()
-        output shouldBeEqualTo listOf(STRING)
-    }
-
-    @Test
     fun fromFile(@TempDir dir: Path) = runSuspendTest {
         val input = dir.resolve("input.txt").toFile()
         input.writeText(STRING)
@@ -47,14 +37,34 @@ class InputSourceTest {
     }
 
     @Test
-    fun fromStream() = runSuspendTest {
+    fun fromString() = runSuspendTest {
+        val output = process(
+            "cat",
+            stdin = InputSource.fromString(STRING),
+            stdout = Redirect.CAPTURE,
+        ).unwrap()
+        output shouldBeEqualTo listOf(STRING)
+    }
+
+    @Test
+    fun fromInputStream() = runSuspendTest {
         val inputStream = ByteArrayInputStream(STRING.toByteArray())
         val output = process(
             "cat",
             stdin = InputSource.fromInputStream(inputStream),
-            stdout = Redirect.CAPTURE
+            stdout = Redirect.CAPTURE,
         ).unwrap()
         output shouldBeEqualTo listOf(STRING)
+    }
+
+    @Test
+    fun fromParent() = runSuspendTest {
+        val output = process(
+            "cat",
+            stdin = InputSource.FromParent,
+            stdout = Redirect.CAPTURE,
+        ).unwrap()
+        output shouldBeEqualTo listOf()
     }
 
     @Nested
@@ -77,7 +87,7 @@ class InputSourceTest {
                         }
                     },
                     stdout = Redirect.CAPTURE,
-                    consumer = consumer::add
+                    consumer = consumer::add,
                 )
             }
 
