@@ -1,8 +1,5 @@
 package com.github.pgreze.process
 
-import java.io.ByteArrayInputStream
-import java.nio.file.Path
-import java.util.Collections
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
@@ -14,6 +11,9 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
+import java.io.ByteArrayInputStream
+import java.nio.file.Path
+import java.util.Collections
 
 @ExperimentalCoroutinesApi
 class InputSourceTest {
@@ -23,7 +23,9 @@ class InputSourceTest {
     }
 
     @Test
-    fun fromFile(@TempDir dir: Path) = runSuspendTest {
+    fun fromFile(
+        @TempDir dir: Path,
+    ) = runSuspendTest {
         val input = dir.resolve("input.txt").toFile()
         input.writeText(STRING)
 
@@ -37,69 +39,73 @@ class InputSourceTest {
     }
 
     @Test
-    fun fromString() = runSuspendTest {
-        val output = process(
-            "cat",
-            stdin = InputSource.fromString(STRING),
-            stdout = Redirect.CAPTURE,
-        ).unwrap()
-        output shouldBeEqualTo listOf(STRING)
-    }
+    fun fromString() =
+        runSuspendTest {
+            val output = process(
+                "cat",
+                stdin = InputSource.fromString(STRING),
+                stdout = Redirect.CAPTURE,
+            ).unwrap()
+            output shouldBeEqualTo listOf(STRING)
+        }
 
     @Test
-    fun fromInputStream() = runSuspendTest {
-        val inputStream = ByteArrayInputStream(STRING.toByteArray())
-        val output = process(
-            "cat",
-            stdin = InputSource.fromInputStream(inputStream),
-            stdout = Redirect.CAPTURE,
-        ).unwrap()
-        output shouldBeEqualTo listOf(STRING)
-    }
+    fun fromInputStream() =
+        runSuspendTest {
+            val inputStream = ByteArrayInputStream(STRING.toByteArray())
+            val output = process(
+                "cat",
+                stdin = InputSource.fromInputStream(inputStream),
+                stdout = Redirect.CAPTURE,
+            ).unwrap()
+            output shouldBeEqualTo listOf(STRING)
+        }
 
     @Test
-    fun fromParent() = runSuspendTest {
-        val output = process(
-            "cat",
-            stdin = InputSource.FromParent,
-            stdout = Redirect.CAPTURE,
-        ).unwrap()
-        output shouldBeEqualTo listOf()
-    }
+    fun fromParent() =
+        runSuspendTest {
+            val output = process(
+                "cat",
+                stdin = InputSource.FromParent,
+                stdout = Redirect.CAPTURE,
+            ).unwrap()
+            output shouldBeEqualTo listOf()
+        }
 
     @Nested
     @DisplayName("ensure that input and output are concurrently processed")
     inner class AsyncStreams {
-
         @RepeatedTest(5)
-        fun test() = runSuspendTest {
-            // Used to synchronized producer and consumer
-            val channel = Channel<Unit>(1)
-            val consumer = Collections.synchronizedList(mutableListOf<String>())
-            val proc = async(Dispatchers.IO) {
-                process(
-                    "cat",
-                    stdin = InputSource.FromStream { str ->
-                        LINES.forEach {
-                            str.write("$it\n".toByteArray())
-                            str.flush()
-                            channel.receive()
-                        }
-                    },
-                    stdout = Redirect.CAPTURE,
-                    consumer = consumer::add,
-                )
-            }
-
-            LINES.toList()
-                .let { (1..it.size).map { idx -> it.subList(0, idx) } }
-                .forEach { list ->
-                    delay(50)
-                    consumer shouldBeEqualTo list
-                    channel.send(Unit)
+        fun test() =
+            runSuspendTest {
+                // Used to synchronized producer and consumer
+                val channel = Channel<Unit>(1)
+                val consumer = Collections.synchronizedList(mutableListOf<String>())
+                val proc = async(Dispatchers.IO) {
+                    process(
+                        "cat",
+                        stdin = InputSource.FromStream { str ->
+                            LINES.forEach {
+                                str.write("$it\n".toByteArray())
+                                str.flush()
+                                channel.receive()
+                            }
+                        },
+                        stdout = Redirect.CAPTURE,
+                        consumer = consumer::add,
+                    )
                 }
 
-            proc.await().unwrap()
-        }
+                LINES
+                    .toList()
+                    .let { (1..it.size).map { idx -> it.subList(0, idx) } }
+                    .forEach { list ->
+                        delay(50)
+                        consumer shouldBeEqualTo list
+                        channel.send(Unit)
+                    }
+
+                proc.await().unwrap()
+            }
     }
 }

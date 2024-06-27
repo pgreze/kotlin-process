@@ -1,7 +1,7 @@
 package com.github.pgreze.process
 
-import java.io.File
 import kotlinx.coroutines.flow.Flow
+import java.io.File
 
 sealed class Redirect {
     /** Ignores the related stream. */
@@ -28,26 +28,36 @@ sealed class Redirect {
     object CAPTURE : Redirect()
 
     /** Override or append to a file. */
-    class ToFile(val file: File, val append: Boolean = false) : Redirect()
+    class ToFile(
+        val file: File,
+        val append: Boolean = false,
+    ) : Redirect()
 
     /**
      * Alternative to [CAPTURE] allowing to consume without delay a stream
      * without storing it in memory, and so not returned at the end of [process] invocation.
      * @see [process]'s consumer argument to consume [CAPTURE] content without delay.
      */
-    class Consume(val consumer: suspend (Flow<String>) -> Unit) : Redirect()
+    class Consume(
+        val consumer: suspend (Flow<String>) -> Unit,
+    ) : Redirect()
 }
 
-internal fun Redirect.toNative() = when (this) {
-    // Support jdk8: https://stackoverflow.com/a/55629297
-    Redirect.SILENT -> ProcessBuilder.Redirect.to(
-        File(if (System.getProperty("os.name").startsWith("Windows")) "NUL" else "/dev/null")
-    )
-    Redirect.PRINT -> ProcessBuilder.Redirect.INHERIT
-    Redirect.CAPTURE -> ProcessBuilder.Redirect.PIPE
-    is Redirect.ToFile -> when (append) {
-        true -> ProcessBuilder.Redirect.appendTo(file)
-        false -> ProcessBuilder.Redirect.to(file)
+internal fun Redirect.toNative() =
+    when (this) {
+        // Support jdk8: https://stackoverflow.com/a/55629297
+        Redirect.SILENT -> ProcessBuilder.Redirect.to(
+            File(if (System.getProperty("os.name").startsWith("Windows")) "NUL" else "/dev/null"),
+        )
+
+        Redirect.PRINT -> ProcessBuilder.Redirect.INHERIT
+
+        Redirect.CAPTURE -> ProcessBuilder.Redirect.PIPE
+
+        is Redirect.ToFile -> when (append) {
+            true -> ProcessBuilder.Redirect.appendTo(file)
+            false -> ProcessBuilder.Redirect.to(file)
+        }
+
+        is Redirect.Consume -> ProcessBuilder.Redirect.PIPE
     }
-    is Redirect.Consume -> ProcessBuilder.Redirect.PIPE
-}
