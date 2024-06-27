@@ -51,8 +51,13 @@ tasks.jacocoTestReport {
 }
 
 dependencies {
-    implementation(kotlin("stdlib-jdk8"))
-    implementation(KotlinX.coroutines.core)
+    setOf(
+        kotlin("stdlib-jdk8"),
+        KotlinX.coroutines.core,
+    ).forEach { dependency ->
+        compileOnly(dependency)
+        testImplementation(dependency)
+    }
 
     testImplementation("org.amshove.kluent:kluent:_")
     testImplementation(platform(Testing.junit.bom))
