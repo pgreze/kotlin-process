@@ -1,10 +1,16 @@
+@file:Suppress("UnstableApiUsage")
+
+rootProject.name = "kotlin-process"
+
 @Suppress("UnstableApiUsage")
 dependencyResolutionManagement.repositories {
     mavenCentral()
 }
 
-rootProject.name = "kotlin-process"
-
 plugins {
-    id("de.fayard.refreshVersions") version "0.40.2"
+    id("de.fayard.refreshVersions") version "0.60.5"
+}
+
+refreshVersions {
+    rejectVersionIf { candidate.stabilityLevel.isLessStableThan(current.stabilityLevel) }
 }
