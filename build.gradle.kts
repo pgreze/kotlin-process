@@ -35,10 +35,6 @@ tasks.test {
     finalizedBy(tasks.jacocoTestReport)
 }
 
-configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
-    version.set(versionFor("version.com.pinterest.ktlint..ktlint-cli"))
-}
-
 jacoco {
     toolVersion = "0.8.7"
 }
@@ -47,6 +43,10 @@ tasks.jacocoTestReport {
         xml.required.set(true)
         html.required.set(System.getenv("CI") != "true")
     }
+}
+
+configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
+    version.set(versionFor("version.com.pinterest.ktlint..ktlint-cli"))
 }
 
 dependencies {
