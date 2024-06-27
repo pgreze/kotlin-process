@@ -10,13 +10,17 @@ sealed class InputSource {
      * Natively supported file redirection.
      * @see ProcessBuilder.Redirect.from
      */
-    class FromFile(val file: File) : InputSource()
+    class FromFile(
+        val file: File,
+    ) : InputSource()
 
     /**
      * Allows custom logic given the [Process.getInputStream] instance,
      * auto-closed after [handler] completes.
      */
-    class FromStream(val handler: suspend (OutputStream) -> Unit) : InputSource()
+    class FromStream(
+        val handler: suspend (OutputStream) -> Unit,
+    ) : InputSource()
 
     /**
      * Natively supported parent provided redirection.
@@ -30,22 +34,25 @@ sealed class InputSource {
         fun fromString(
             string: String,
             charset: Charset = Charset.forName("UTF-8"),
-        ): InputSource = FromStream {
-            it.write(string.toByteArray(charset))
-        }
+        ): InputSource =
+            FromStream {
+                it.write(string.toByteArray(charset))
+            }
 
         @JvmStatic
         fun fromInputStream(
             inputStream: InputStream,
             bufferSize: Int = DEFAULT_BUFFER_SIZE,
-        ): InputSource = FromStream { out ->
-            inputStream.use { it.copyTo(out, bufferSize) }
-        }
+        ): InputSource =
+            FromStream { out ->
+                inputStream.use { it.copyTo(out, bufferSize) }
+            }
     }
 }
 
-internal fun InputSource.toNative() = when (this) {
-    is InputSource.FromFile -> ProcessBuilder.Redirect.from(file)
-    is InputSource.FromStream -> ProcessBuilder.Redirect.PIPE
-    is InputSource.FromParent -> ProcessBuilder.Redirect.INHERIT
-}
+internal fun InputSource.toNative() =
+    when (this) {
+        is InputSource.FromFile -> ProcessBuilder.Redirect.from(file)
+        is InputSource.FromStream -> ProcessBuilder.Redirect.PIPE
+        is InputSource.FromParent -> ProcessBuilder.Redirect.INHERIT
+    }

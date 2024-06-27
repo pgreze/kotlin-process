@@ -1,0 +1,6 @@
+[*.{kt,kts}]
+insert_final_newline = true
+ktlint_code_style = ktlint_official
+ktlint_standard_import-ordering = disabled
+ktlint_standard_type-parameter-comment = disabled
+ktlint_standard_multiline-expression-wrapping = disabled

@@ -1,3 +1,5 @@
+import de.fayard.refreshVersions.core.versionFor
+
 plugins {
     kotlin("jvm")
     id("org.jetbrains.dokka")
@@ -9,14 +11,11 @@ plugins {
     id("io.github.gradle-nexus.publish-plugin")
 }
 
-val myGroup = "com.github.pgreze"
-    .also { group = it }
+val myGroup = "com.github.pgreze".also { group = it }
 val myArtifactId = "kotlin-process"
 val tagVersion = System.getenv("GITHUB_REF")?.split('/')?.last()
-val myVersion = (tagVersion?.trimStart('v') ?: "WIP")
-    .also { version = it }
-val myDescription = "Kotlin friendly way to run an external process"
-    .also { description = it }
+val myVersion = (tagVersion?.trimStart('v') ?: "WIP").also { version = it }
+val myDescription = "Kotlin friendly way to run an external process".also { description = it }
 val githubUrl = "https://github.com/pgreze/$myArtifactId"
 
 java {
@@ -36,10 +35,6 @@ tasks.test {
     finalizedBy(tasks.jacocoTestReport)
 }
 
-configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
-    disabledRules.set(setOf("import-ordering"))
-}
-
 jacoco {
     toolVersion = "0.8.7"
 }
@@ -50,9 +45,21 @@ tasks.jacocoTestReport {
     }
 }
 
+configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
+    version.set(versionFor("version.com.pinterest.ktlint..ktlint-cli"))
+}
+
 dependencies {
-    implementation(kotlin("stdlib-jdk8"))
-    implementation(KotlinX.coroutines.core)
+    setOf(
+        kotlin("stdlib-jdk8"),
+        KotlinX.coroutines.core,
+    ).forEach { dependency ->
+        compileOnly(dependency)
+        testImplementation(dependency)
+    }
+
+    // To trigger refreshVersions updates
+    "ktlint"("com.pinterest.ktlint:ktlint-cli:_")
 
     testImplementation("org.amshove.kluent:kluent:_")
     testImplementation(platform(Testing.junit.bom))
@@ -119,13 +126,15 @@ publishing {
 mapOf(
     "signing.keyId" to "SIGNING_KEY_ID",
     "signing.password" to "SIGNING_PASSWORD",
-    "signing.secretKeyRingFile" to "SIGNING_SECRET_KEY_RING_FILE"
+    "signing.secretKeyRingFile" to "SIGNING_SECRET_KEY_RING_FILE",
 ).forEach { (key, envName) ->
     val value = propOrEnv(key, envName)
         ?.let {
             if (key.contains("File")) {
                 rootProject.file(it).absolutePath
-            } else it
+            } else {
+                it
+            }
         }
     ext.set(key, value)
 }

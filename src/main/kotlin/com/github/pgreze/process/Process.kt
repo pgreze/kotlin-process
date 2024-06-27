@@ -1,8 +1,5 @@
 package com.github.pgreze.process
 
-import java.io.File
-import java.io.InputStream
-import java.nio.charset.Charset
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -16,6 +13,9 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
+import java.io.File
+import java.io.InputStream
+import java.nio.charset.Charset
 
 private suspend fun <R> coroutineScopeIO(block: suspend CoroutineScope.() -> R) =
     withContext(Dispatchers.IO) {
@@ -40,73 +40,78 @@ suspend fun process(
     destroyForcibly: Boolean = false,
     /** Consume without delay all streams configured with [Redirect.CAPTURE]. */
     consumer: suspend (String) -> Unit = {},
-): ProcessResult = coroutineScopeIO {
-    // Based on the fact that it's hardcore to achieve manually:
-    // https://stackoverflow.com/a/4959696
-    val captureAll = stdout == stderr && stderr == Redirect.CAPTURE
+): ProcessResult =
+    coroutineScopeIO {
+        // Based on the fact that it's hardcore to achieve manually:
+        // https://stackoverflow.com/a/4959696
+        val captureAll = stdout == stderr && stderr == Redirect.CAPTURE
 
-    // https://www.baeldung.com/java-lang-processbuilder-api
-    val process = ProcessBuilder(*command).apply {
-        stdin?.toNative()?.let { redirectInput(it) }
+        // https://www.baeldung.com/java-lang-processbuilder-api
+        val process = ProcessBuilder(*command)
+            .apply {
+                stdin?.toNative()?.let { redirectInput(it) }
 
-        if (captureAll) {
-            redirectErrorStream(true)
-        } else {
-            redirectOutput(stdout.toNative())
-            redirectError(stderr.toNative())
+                if (captureAll) {
+                    redirectErrorStream(true)
+                } else {
+                    redirectOutput(stdout.toNative())
+                    redirectError(stderr.toNative())
+                }
+
+                directory?.let { directory(it) }
+                env?.let { environment().putAll(it) }
+            }.start()
+
+        // Handles async consumptions before the blocking output handling.
+        if (stdout is Redirect.Consume) {
+            process.inputStream.lineFlow(charset, stdout.consumer)
+        }
+        if (stderr is Redirect.Consume) {
+            process.errorStream.lineFlow(charset, stderr.consumer)
         }
 
-        directory?.let { directory(it) }
-        env?.let { environment().putAll(it) }
-    }.start()
+        val output = async {
+            when {
+                captureAll || stdout == Redirect.CAPTURE ->
+                    process.inputStream
 
-    // Handles async consumptions before the blocking output handling.
-    if (stdout is Redirect.Consume) {
-        process.inputStream.lineFlow(charset, stdout.consumer)
-    }
-    if (stderr is Redirect.Consume) {
-        process.errorStream.lineFlow(charset, stderr.consumer)
-    }
+                stderr == Redirect.CAPTURE ->
+                    process.errorStream
 
-    val output = async {
-        when {
-            captureAll || stdout == Redirect.CAPTURE ->
-                process.inputStream
+                else -> null
+            }?.lineFlow(charset) { f ->
+                @Suppress("ktlint:standard:chain-method-continuation")
+                f.map {
+                    yield()
+                    it.also { consumer(it) }
+                }.toList()
+            } ?: emptyList()
+        }
 
-            stderr == Redirect.CAPTURE ->
-                process.errorStream
+        val input = async {
+            (stdin as? InputSource.FromStream)?.handler?.let { handler ->
+                process.outputStream.use { handler(it) }
+            }
+        }
 
-            else -> null
-        }?.lineFlow(charset) { f ->
-            f.map {
-                yield()
-                it.also { consumer(it) }
-            }.toList()
-        } ?: emptyList()
-    }
-
-    val input = async {
-        (stdin as? InputSource.FromStream)?.handler?.let { handler ->
-            process.outputStream.use { handler(it) }
+        try {
+            @Suppress("UNCHECKED_CAST")
+            ProcessResult(
+                // Consume the output before waitFor,
+                // ensuring no content is skipped.
+                output = awaitAll(input, output).last() as List<String>,
+                resultCode = runInterruptible { process.waitFor() },
+            )
+        } catch (e: CancellationException) {
+            when (destroyForcibly) {
+                true -> process.destroyForcibly()
+                false -> process.destroy()
+            }
+            throw e
         }
     }
 
-    try {
-        @Suppress("UNCHECKED_CAST")
-        ProcessResult(
-            // Consume the output before waitFor,
-            // ensuring no content is skipped.
-            output = awaitAll(input, output).last() as List<String>,
-            resultCode = runInterruptible { process.waitFor() },
-        )
-    } catch (e: CancellationException) {
-        when (destroyForcibly) {
-            true -> process.destroyForcibly()
-            false -> process.destroy()
-        }
-        throw e
-    }
-}
-
-private suspend fun <T> InputStream.lineFlow(charset: Charset, block: suspend (Flow<String>) -> T): T =
-    bufferedReader(charset).use { it.lineSequence().asFlow().let { f -> block(f) } }
+private suspend fun <T> InputStream.lineFlow(
+    charset: Charset,
+    block: suspend (Flow<String>) -> T,
+): T = bufferedReader(charset).use { it.lineSequence().asFlow().let { f -> block(f) } }

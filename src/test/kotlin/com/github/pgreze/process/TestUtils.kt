@@ -7,5 +7,4 @@ fun runSuspendTest(block: suspend CoroutineScope.() -> Unit) {
     runBlocking { block() }
 }
 
-fun List<String>.joinLines(): String =
-    joinToString(separator = "") { "$it\n" }
+fun List<String>.joinLines(): String = joinToString(separator = "") { "$it\n" }
