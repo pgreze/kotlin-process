@@ -201,9 +201,9 @@ class ProcessKtTest {
     @DisplayName("print to console or not")
     inner class Cancellation {
         @ParameterizedTest
-        @ValueSource(booleans = [true, false])
+        @ValueSource(strings = ["CAPTURE", "SILENT", "Consume" ])
         @Timeout(value = 3, unit = TimeUnit.SECONDS)
-        fun `job cancellation should destroy the process`(captureStdout: Boolean) =
+        fun `job cancellation should destroy the process`(captureMode: String) =
             runSuspendTest {
                 var visitedCancelledBlock = false
                 val job = launch(Dispatchers.IO) {
@@ -211,7 +211,12 @@ class ProcessKtTest {
                     try {
                         val ret = process(
                             "cat", // cat without args is an endless process.
-                            stdout = if (captureStdout) CAPTURE else SILENT,
+                            stdout = when (captureMode) {
+                                "CAPTURE" -> CAPTURE
+                                "SILENT" -> SILENT
+                                "Consume" -> Consume { it.collect {  } }
+                                else -> throw IllegalArgumentException("Illegal capture mode: $captureMode")
+                            }
                         )
                         throw AssertionError("Process completed despite being cancelled: $ret")
                     } catch (e: CancellationException) {
