@@ -64,10 +64,14 @@ suspend fun process(
 
         // Handles async consumptions before the blocking output handling.
         if (stdout is Redirect.Consume) {
-            process.inputStream.lineFlow(charset, stdout.consumer)
+            async {
+                process.inputStream.lineFlow(charset, stdout.consumer)
+            }
         }
         if (stderr is Redirect.Consume) {
-            process.errorStream.lineFlow(charset, stderr.consumer)
+            async {
+                process.errorStream.lineFlow(charset, stderr.consumer)
+            }
         }
 
         val output = async {
