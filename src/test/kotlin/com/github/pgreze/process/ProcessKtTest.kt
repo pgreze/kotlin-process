@@ -180,6 +180,30 @@ class ProcessKtTest {
     }
 
     @Test
+    fun `use consume on stdout and stderr in parallel`(
+        @TempDir dir: Path,
+    ) = runSuspendTest {
+        val stdoutAndStdErr = mutableListOf<String>()
+
+        val output = process(
+            command = arrayOf(
+                "bash",
+                "-c",
+                "(echo 1 >&2; sleep 0.1; echo 2; sleep 0.1; echo 3 >&2; sleep 0.1; echo 4; sleep 0.1;)"
+            ),
+            stdout = Consume {
+                it.collect(stdoutAndStdErr::add)
+            },
+            stderr = Consume {
+                it.collect(stdoutAndStdErr::add)
+            },
+        ).unwrap()
+
+        output shouldBeEqualTo emptyList()
+        stdoutAndStdErr shouldBeEqualTo listOf(1, 2, 3, 4).map { it.toString() }
+    }
+
+    @Test
     fun `ensure Consume and CAPTURE are playing well together`(
         @TempDir dir: Path,
     ) = runSuspendTest {
@@ -201,7 +225,7 @@ class ProcessKtTest {
     @DisplayName("print to console or not")
     inner class Cancellation {
         @ParameterizedTest
-        @ValueSource(strings = ["CAPTURE", "SILENT", "Consume" ])
+        @ValueSource(strings = ["CAPTURE", "SILENT", "Consume"])
         @Timeout(value = 3, unit = TimeUnit.SECONDS)
         fun `job cancellation should destroy the process`(captureMode: String) =
             runSuspendTest {
@@ -214,7 +238,7 @@ class ProcessKtTest {
                             stdout = when (captureMode) {
                                 "CAPTURE" -> CAPTURE
                                 "SILENT" -> SILENT
-                                "Consume" -> Consume { it.collect {  } }
+                                "Consume" -> Consume { it.collect { } }
                                 else -> throw IllegalArgumentException("Illegal capture mode: $captureMode")
                             }
                         )
