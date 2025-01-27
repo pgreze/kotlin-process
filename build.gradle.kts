@@ -1,4 +1,5 @@
 import de.fayard.refreshVersions.core.versionFor
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     kotlin("jvm")
@@ -27,7 +28,7 @@ java {
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-    kotlinOptions.jvmTarget = "1.8"
+    compilerOptions.jvmTarget = JvmTarget.JVM_1_8
 }
 
 tasks.test {
@@ -45,8 +46,13 @@ tasks.jacocoTestReport {
     }
 }
 
-configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
+ktlint {
     version.set(versionFor("com.pinterest.ktlint:ktlint-cli:_"))
+    baseline.set(projectDir.resolve("config/ktlint-baseline.xml"))
+}
+
+detekt {
+    baseline = projectDir.resolve("config/detekt-baseline.xml")
 }
 
 dependencies {
