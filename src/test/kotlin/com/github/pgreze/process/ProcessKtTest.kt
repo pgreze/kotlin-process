@@ -180,16 +180,14 @@ class ProcessKtTest {
     }
 
     @Test
-    fun `use consume on stdout and stderr in parallel`(
-        @TempDir dir: Path,
-    ) = runSuspendTest {
+    fun `use consume on stdout and stderr in parallel`() = runSuspendTest {
         val stdoutAndStdErr = mutableListOf<String>()
 
         val output = process(
             command = arrayOf(
                 "bash",
                 "-c",
-                "(echo 1 >&2; sleep 0.1; echo 2; sleep 0.1; echo 3 >&2; sleep 0.1; echo 4; sleep 0.1;)"
+                "(echo 1 >&2; sleep 0.1; echo 2; sleep 0.1; echo 3 >&2; sleep 0.1; echo 4; sleep 0.1;)",
             ),
             stdout = Consume {
                 it.collect(stdoutAndStdErr::add)
@@ -240,7 +238,7 @@ class ProcessKtTest {
                                 "SILENT" -> SILENT
                                 "Consume" -> Consume { it.collect { } }
                                 else -> throw IllegalArgumentException("Illegal capture mode: $captureMode")
-                            }
+                            },
                         )
                         throw AssertionError("Process completed despite being cancelled: $ret")
                     } catch (e: CancellationException) {

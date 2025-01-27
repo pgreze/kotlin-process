@@ -4,6 +4,9 @@
 # Java class files
 *.class
 
+# Kotlin
+.kotlin
+
 # Generated files
 bin/
 gen/

@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>LongMethod:Process.kt$@Suppress("BlockingMethodInNonBlockingContext", "LongParameterList", "ComplexMethod") @JvmOverloads suspend fun process( vararg command: String, stdin: InputSource? = null, stdout: Redirect = Redirect.PRINT, stderr: Redirect = Redirect.PRINT, charset: Charset = Charsets.UTF_8, /** Extend with new environment variables during this process's invocation. */ env: Map&lt;String, String>? = null, /** Override the process working directory. */ directory: File? = null, /** Determine if process should be destroyed forcibly on job cancellation. */ destroyForcibly: Boolean = false, /** Consume without delay all streams configured with [Redirect.CAPTURE]. */ consumer: suspend (String) -> Unit = {}, ): ProcessResult</ID>
+    <ID>SpreadOperator:Process.kt$(*syncs)</ID>
+  </CurrentIssues>
+</SmellBaseline>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<baseline version="1.0">
+    <file name="src/main/kotlin/com/github/pgreze/process/Process.kt">
+        <error line="44" column="20" source="standard:function-signature" />
+    </file>
+    <file name="src/test/kotlin/com/github/pgreze/process/ProcessKtTest.kt">
+        <error line="183" column="60" source="standard:function-signature" />
+    </file>
+</baseline>

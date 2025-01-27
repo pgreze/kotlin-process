@@ -2,6 +2,7 @@ package com.github.pgreze.process
 
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -40,41 +41,45 @@ suspend fun process(
     destroyForcibly: Boolean = false,
     /** Consume without delay all streams configured with [Redirect.CAPTURE]. */
     consumer: suspend (String) -> Unit = {},
-): ProcessResult =
-    coroutineScopeIO {
-        // Based on the fact that it's hardcore to achieve manually:
-        // https://stackoverflow.com/a/4959696
-        val captureAll = stdout == stderr && stderr == Redirect.CAPTURE
+): ProcessResult = coroutineScopeIO {
+    // Special case if both stdout and stderr are captured,
+    // leading to an impossibility to distinguish them:
+    // https://stackoverflow.com/a/4959696
+    val captureAll = stdout == Redirect.CAPTURE && stderr == Redirect.CAPTURE
 
-        // https://www.baeldung.com/java-lang-processbuilder-api
-        val process = ProcessBuilder(*command)
-            .apply {
-                stdin?.toNative()?.let { redirectInput(it) }
+    // https://www.baeldung.com/java-lang-processbuilder-api
+    val process = ProcessBuilder(*command)
+        .apply {
+            stdin?.toNative()?.let { redirectInput(it) }
 
-                if (captureAll) {
-                    redirectErrorStream(true)
-                } else {
-                    redirectOutput(stdout.toNative())
-                    redirectError(stderr.toNative())
-                }
-
-                directory?.let { directory(it) }
-                env?.let { environment().putAll(it) }
-            }.start()
-
-        // Handles async consumptions before the blocking output handling.
-        if (stdout is Redirect.Consume) {
-            async {
-                process.inputStream.lineFlow(charset, stdout.consumer)
+            if (captureAll) {
+                redirectErrorStream(true)
+            } else {
+                redirectOutput(stdout.toNative())
+                redirectError(stderr.toNative())
             }
-        }
-        if (stderr is Redirect.Consume) {
-            async {
-                process.errorStream.lineFlow(charset, stderr.consumer)
-            }
-        }
 
-        val output = async {
+            directory?.let { directory(it) }
+            env?.let { environment().putAll(it) }
+        }.start()
+
+    val syncs = arrayOf<Deferred<Any?>>(
+        async {
+            (stdout as? Redirect.Consume)?.let {
+                process.inputStream.lineFlow(charset, it.consumer)
+            }
+        },
+        async {
+            (stderr as? Redirect.Consume)?.let {
+                process.errorStream.lineFlow(charset, it.consumer)
+            }
+        },
+        async {
+            (stdin as? InputSource.FromStream)?.handler?.let { handler ->
+                process.outputStream.use { handler(it) }
+            }
+        },
+        async {
             when {
                 captureAll || stdout == Redirect.CAPTURE ->
                     process.inputStream
@@ -90,30 +95,25 @@ suspend fun process(
                     it.also { consumer(it) }
                 }.toList()
             } ?: emptyList()
-        }
+        },
+    )
 
-        val input = async {
-            (stdin as? InputSource.FromStream)?.handler?.let { handler ->
-                process.outputStream.use { handler(it) }
-            }
+    try {
+        @Suppress("UNCHECKED_CAST")
+        ProcessResult(
+            // Consume the output before waitFor,
+            // ensuring no content is skipped.
+            output = awaitAll(*syncs).last() as List<String>,
+            resultCode = runInterruptible { process.waitFor() },
+        )
+    } catch (e: CancellationException) {
+        when (destroyForcibly) {
+            true -> process.destroyForcibly()
+            false -> process.destroy()
         }
-
-        try {
-            @Suppress("UNCHECKED_CAST")
-            ProcessResult(
-                // Consume the output before waitFor,
-                // ensuring no content is skipped.
-                output = awaitAll(input, output).last() as List<String>,
-                resultCode = runInterruptible { process.waitFor() },
-            )
-        } catch (e: CancellationException) {
-            when (destroyForcibly) {
-                true -> process.destroyForcibly()
-                false -> process.destroy()
-            }
-            throw e
-        }
+        throw e
     }
+}
 
 private suspend fun <T> InputStream.lineFlow(
     charset: Charset,
