@@ -20,7 +20,7 @@ dependencies {
 Or in your kotlin script:
 
 ```kotlin
-@file:DependsOn("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
+@file:DependsOn("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
 @file:DependsOn("com.github.pgreze:kotlin-process:$kotlinProcessVersion")
 ```
 

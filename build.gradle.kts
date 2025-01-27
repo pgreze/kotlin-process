@@ -36,7 +36,7 @@ tasks.test {
 }
 
 jacoco {
-    toolVersion = "0.8.7"
+    toolVersion = versionFor("org.jacoco:jacoco:_")
 }
 tasks.jacocoTestReport {
     reports {
@@ -46,7 +46,7 @@ tasks.jacocoTestReport {
 }
 
 configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
-    version.set(versionFor("version.com.pinterest.ktlint..ktlint-cli"))
+    version.set(versionFor("com.pinterest.ktlint:ktlint-cli:_"))
 }
 
 dependencies {
@@ -57,9 +57,6 @@ dependencies {
         compileOnly(dependency)
         testImplementation(dependency)
     }
-
-    // To trigger refreshVersions updates
-    "ktlint"("com.pinterest.ktlint:ktlint-cli:_")
 
     testImplementation("org.amshove.kluent:kluent:_")
     testImplementation(platform(Testing.junit.bom))
